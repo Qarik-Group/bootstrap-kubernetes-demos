@@ -8,8 +8,10 @@ export CLUSTER_ZONE=${CLUSTER_ZONE:-us-west1-c}
 
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
-    echo "  up [--helm|--tiller] [--knative] -- deploys GKE, optionally installs Helm, Knative"
-    echo "  down                             -- destroys GKE cluster"
+    echo "  up [--helm|--tiller]"
+    echo "     [--service-catalog|--sc]"
+    echo "     [--knative]     -- deploys GKE, optionally installs Helm, Service Catalog, Knative"
+    echo "  down               -- destroys GKE cluster"
 }
 
 down() {
@@ -38,13 +40,28 @@ up() {
       --user=$(gcloud config get-value core/account)
   }
 
-  [[ "${helm:-}" == "1" ]] && { helm-manager up; }
+  [[ "${helm:-}" == "1" ]] && {
+    echo "Install/upgrade Tiller Server for Helm"
+    helm-manager up
+    helm repo update
+  }
+  [[ "${servicecatalog:-}" == "1" ]] && {
+    echo "Install/upgrade Service Catalog via Helm"
+    helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
+    if helm status catalog 2>&1 > /dev/null; then
+      helm upgrade catalog svc-cat/catalog --namespace catalog --wait
+    else
+      helm install svc-cat/catalog --name catalog --namespace catalog --wait
+    fi
+  }
 
   [[ "${knative:-}" == "1" ]] && {
+    echo "Install/upgrade Knative without monitoring"
     knctl install --exclude-monitoring
 
     knctl domain create --default --domain knative.starkandwayne.com
 
+    echo "Deploy sanity test app to Knative"
     kubectl create ns bootstrap-test
     knctl deploy \
       --namespace bootstrap-test \
@@ -73,6 +90,10 @@ case "${1:-usage}" in
           ;;
         --helm|--tiller)
           export helm=1
+          ;;
+        --service-catalog|--sc)
+          export helm=1
+          export servicecatalog=1
           ;;
       esac
       shift
