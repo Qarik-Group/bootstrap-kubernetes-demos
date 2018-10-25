@@ -23,35 +23,60 @@ up() {
   [[ "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
   [[ "$errors" == "1" ]] && { exit 1; }
 
-  gcloud container clusters create $CLUSTER_NAME \
-    --region=$CLUSTER_ZONE \
-    --cluster-version=latest \
-    --machine-type=n1-standard-2 \
-    --enable-autoscaling --min-nodes=1 --max-nodes=5 \
-    --enable-autorepair \
-    --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
-    --num-nodes=3
+  gcloud container clusters describe $CLUSTER_NAME --region $CLUSTER_ZONE 2>&1 > /dev/null || {
+    gcloud container clusters create $CLUSTER_NAME \
+      --region=$CLUSTER_ZONE \
+      --cluster-version=latest \
+      --machine-type=n1-standard-2 \
+      --enable-autoscaling --min-nodes=1 --max-nodes=5 \
+      --enable-autorepair \
+      --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
+      --num-nodes=3
 
-  kubectl create clusterrolebinding cluster-admin-binding \
-    --clusterrole=cluster-admin \
-    --user=$(gcloud config get-value core/account)
+    kubectl create clusterrolebinding cluster-admin-binding \
+      --clusterrole=cluster-admin \
+      --user=$(gcloud config get-value core/account)
+  }
 
   [[ "${helm:-}" == "1" ]] && { helm-manager up; }
 
-  [[ "${knative:-}" == "1" ]] && { knctl install --exclude-monitoring; }
+  [[ "${knative:-}" == "1" ]] && {
+    knctl install --exclude-monitoring
+
+    knctl domain create --default --domain knative.starkandwayne.com
+
+    kubectl create ns bootstrap-test
+    knctl deploy \
+      --namespace bootstrap-test \
+      --service hello \
+      --image gcr.io/knative-samples/helloworld-go \
+      --env TARGET=Bootstrap
+
+    podStatus=Init
+    while [[ "${podStatus}" != "Running" ]]; do
+      sleep 2
+      podStatus=$(kubectl get pods -n bootstrap-test -l serving.knative.dev/configuration=hello -o jsonpath="{.items[0].status.phase}")
+      echo "  ${podStatus}"
+    done
+    knctl curl -n bootstrap-test -s hello
+
+  }
 }
 
 case "${1:-usage}" in
   up)
     shift
-    case "${1:-}" in
-      --knative)
-        export knative=1
-        ;;
-      --helm|--tiller)
-        export helm=1
-        ;;
-    esac
+    while [[ $# -gt 0 ]]; do
+      case "${1:-}" in
+        --knative)
+          export knative=1
+          ;;
+        --helm|--tiller)
+          export helm=1
+          ;;
+      esac
+      shift
+    done
 
     up
     ;;
