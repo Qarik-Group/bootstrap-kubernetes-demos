@@ -10,8 +10,9 @@ usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
     echo "  up [--helm|--tiller]"
     echo "     [--service-catalog|--sc]"
-    echo "     [--knative]     -- deploys GKE, optionally installs Helm, Service Catalog, Knative"
-    echo "  down               -- destroys GKE cluster"
+    echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
+    echo "     [--knative-build] -- deploys nightly Knative Build"
+    echo "  down                 -- destroys GKE cluster"
 }
 
 down() {
@@ -49,11 +50,7 @@ up() {
   [[ "${servicecatalog:-}" == "1" ]] && {
     echo "Install/upgrade Service Catalog via Helm"
     helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
-    if helm status catalog 2>&1 > /dev/null; then
-      helm upgrade catalog svc-cat/catalog --namespace catalog --wait
-    else
-      helm install svc-cat/catalog --name catalog --namespace catalog --wait
-    fi
+    helm upgrade --install catalog svc-cat/catalog --namespace catalog --wait
   }
 
   [[ "${knative:-}" == "1" ]] && {
@@ -79,6 +76,11 @@ up() {
     knctl curl -n bootstrap-test -s hello
 
   }
+
+  [[ "${knative_build:-}" == "1" ]] && {
+    echo "Install/upgrade latest nightly Knative Build"
+    kubectl apply -f https://storage.googleapis.com/knative-releases/serving/latest/release.yaml --wait
+  }
 }
 
 case "${1:-usage}" in
@@ -88,6 +90,9 @@ case "${1:-usage}" in
       case "${1:-}" in
         --knative)
           export knative=1
+          ;;
+        --knative-build)
+          export knative_build=1
           ;;
         --helm|--tiller)
           export helm=1
