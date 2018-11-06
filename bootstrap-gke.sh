@@ -79,7 +79,8 @@ up() {
 
   [[ "${knative_build:-}" == "1" ]] && {
     echo "Install/upgrade latest nightly Knative Build"
-    kubectl apply -f https://storage.googleapis.com/knative-releases/build/latest/release.yaml --wait
+    # kubectl apply -f https://storage.googleapis.com/knative-releases/build/latest/release.yaml --wait
+    kubectl apply -f https://github.com/knative/build/releases/download/v0.1.0/release.yaml --wait
   }
 }
 
