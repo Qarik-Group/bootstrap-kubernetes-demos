@@ -70,18 +70,22 @@ up() {
   }
   [[ "${cf_broker:-}" == "1" ]] && {
     echo "Install/upgrade CF Marketplace Service Broker via Helm"
-    helm upgrade --install --namespace catalog pws-broker $CF_MARKETPLACE_BROKER_PATH/helm --wait \
+    helm repo add starkandwayne s3://helm.starkandwayne.com/charts
+    helm repo update
+    helm upgrade --install --namespace catalog pws-broker starkandwayne/cf-marketplace-servicebroker --wait \
     --set "cf.api=$CF_API" \
     --set "cf.username=${CF_USERNAME:?required},cf.password=${CF_PASSWORD:?required}" \
     --set "cf.organizationGUID=$(jq -r .OrganizationFields.GUID ~/.cf/config.json)" \
     --set "cf.spaceGUID=$(jq -r .SpaceFields.GUID ~/.cf/config.json)"
 
     # TODO: move into a kubectl apply -f manifest.yml
+    set +e
     kubectl create secret generic pws-broker-cf-marketplace-servicebroker-basic-auth \
       --from-literal username=broker \
       --from-literal password=broker
+    set -e
 
-    sleep 2
+    sleep 5
     svcat register pws-broker-cf-marketplace-servicebroker \
       --url http://pws-broker-cf-marketplace-servicebroker.catalog.svc.cluster.local:8080 \
       --scope cluster \
