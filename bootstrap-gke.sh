@@ -8,8 +8,9 @@ export CLUSTER_ZONE=${CLUSTER_ZONE:-us-west1-c}
 
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
-    echo "  up [--helm|--tiller]"
-    echo "     [--service-catalog|--sc]"
+    echo "  up [--helm|--tiller]         -- deploys Helm"
+    echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
+    echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
     echo "     [--knative-build] -- deploys nightly Knative Build"
     echo "  down                 -- destroys GKE cluster"
@@ -24,8 +25,23 @@ up() {
   [[ "$(which gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH"; errors=1; }
   [[ "$(which kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH"; errors=1; }
   [[ "${helm:-}" == "1" && "$(which helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI from \$PATH"; errors=1; }
+  [[ "${cf_broker:-}" == "1" ]] && {
+    : ${CF_API:?required for --cf-broker}
+    : ${CF_USERNAME:?required for --cf-broker}
+    : ${CF_PASSWORD:?required for --cf-broker}
+    : ${CF_ORGANIZATION:?required for --cf-broker}
+    : ${CF_SPACE:?required for --cf-broker}
+    : ${CF_MARKETPLACE_BROKER_PATH:?need /path/to/cf-marketplace-servicebroker}
+  }
   [[ "${knative:-}" == "1" && "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
   [[ "$errors" == "1" ]] && { exit 1; }
+
+  [[ "${cf_broker:-}" == "1" ]] && {
+    echo "Testing login to Cloud Foundry ${CF_API}..."
+    cf api ${CF_API}
+    cf auth ${CF_USERNAME} ${CF_PASSWORD}
+    cf target -o ${CF_ORGANIZATION} -s ${CF_SPACE}
+  }
 
   gcloud container clusters describe $CLUSTER_NAME --region $CLUSTER_ZONE 2>&1 > /dev/null || {
     gcloud container clusters create $CLUSTER_NAME \
@@ -52,6 +68,25 @@ up() {
     helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
     helm upgrade --install catalog svc-cat/catalog --namespace catalog --wait
   }
+  [[ "${cf_broker:-}" == "1" ]] && {
+    echo "Install/upgrade CF Marketplace Service Broker via Helm"
+    helm upgrade --install --namespace catalog pws-broker $CF_MARKETPLACE_BROKER_PATH/helm --wait \
+    --set "cf.api=$CF_API" \
+    --set "cf.username=${CF_USERNAME:?required},cf.password=${CF_PASSWORD:?required}" \
+    --set "cf.organizationGUID=$(jq -r .OrganizationFields.GUID ~/.cf/config.json)" \
+    --set "cf.spaceGUID=$(jq -r .SpaceFields.GUID ~/.cf/config.json)"
+
+    # TODO: move into a kubectl apply -f manifest.yml
+    kubectl create secret generic pws-broker-cf-marketplace-servicebroker-basic-auth \
+      --from-literal username=broker \
+      --from-literal password=broker
+
+    sleep 2
+    svcat register pws-broker-cf-marketplace-servicebroker \
+      --url http://pws-broker-cf-marketplace-servicebroker.catalog.svc.cluster.local:8080 \
+      --scope cluster \
+      --basic-secret pws-broker-cf-marketplace-servicebroker-basic-auth
+  }
 
   [[ "${knative:-}" == "1" ]] && {
     echo "Install/upgrade Knative without monitoring"
@@ -74,11 +109,10 @@ up() {
       echo "  ${podStatus}"
     done
     knctl curl -n bootstrap-test -s hello
-
   }
 
   [[ "${knative_build:-}" == "1" ]] && {
-    echo "Install/upgrade latest nightly Knative Build"
+    echo "Install/upgrade Knative Build"
     # kubectl apply -f https://storage.googleapis.com/knative-releases/build/latest/release.yaml --wait
     kubectl apply -f https://github.com/knative/build/releases/download/v0.1.0/release.yaml --wait
   }
@@ -101,6 +135,11 @@ case "${1:-usage}" in
         --service-catalog|--sc)
           export helm=1
           export servicecatalog=1
+          ;;
+        --cf-broker)
+          export helm=1
+          export servicecatalog=1
+          export cf_broker=1
           ;;
       esac
       shift
