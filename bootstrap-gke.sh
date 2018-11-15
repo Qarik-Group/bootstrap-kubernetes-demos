@@ -12,7 +12,7 @@ usage() {
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
-    echo "     [--knative-ip IP] -- map IP to ingress gateway"
+    echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--knative-build] -- deploys nightly Knative Build"
     echo "  down                 -- destroys GKE cluster"
 }
