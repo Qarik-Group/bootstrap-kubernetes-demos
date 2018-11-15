@@ -12,6 +12,7 @@ usage() {
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
+    echo "     [--knative-ip IP] -- map IP to ingress gateway"
     echo "     [--knative-build] -- deploys nightly Knative Build"
     echo "  down                 -- destroys GKE cluster"
 }
@@ -99,7 +100,9 @@ up() {
     knctl domain create --default --domain knative.starkandwayne.com
 
     echo "Deploy sanity test app to Knative"
+    set +e
     kubectl create ns bootstrap-test
+    set -e
     knctl deploy \
       --namespace bootstrap-test \
       --service hello \
@@ -113,6 +116,19 @@ up() {
       echo "  ${podStatus}"
     done
     knctl curl -n bootstrap-test -s hello
+  }
+
+  [[ "${knative_addr_name:-X}" != "X" ]] && {
+    address=$(gcloud compute addresses describe knative-ingress --region $CLUSTER_REGION --format json)
+    ip=$(echo "$address" | jq -r ".address")
+    echo "Mapping Knative Ingress Gateway to $ip..."
+    kubectl patch svc knative-ingressgateway --namespace istio-system --patch \
+      $(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")
+
+    echo
+    echo "In a while, test your DNS + ingress with:"
+    echo "  curl -v hello.bootstrap-test.knative.starkandwayne.com"
+    echo
   }
 
   [[ "${knative_build:-}" == "1" ]] && {
@@ -129,6 +145,10 @@ case "${1:-usage}" in
       case "${1:-}" in
         --knative)
           export knative=1
+          ;;
+        --knative-addr-name)
+          shift
+          export knative_addr_name=$1
           ;;
         --knative-build)
           export knative_build=1
