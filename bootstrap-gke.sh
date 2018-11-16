@@ -58,6 +58,7 @@ up() {
       --clusterrole=cluster-admin \
       --user=$(gcloud config get-value core/account)
   }
+  gcloud container clusters get-credentials $CLUSTER_NAME --region $CLUSTER_ZONE
 
   [[ "${helm:-}" == "1" ]] && {
     echo "Install/upgrade Tiller Server for Helm"
