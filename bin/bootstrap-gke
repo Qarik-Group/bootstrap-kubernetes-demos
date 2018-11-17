@@ -14,7 +14,7 @@ usage() {
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
     echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--knative-build] -- deploys nightly Knative Build"
-    echo "  down                 -- destroys GKE cluster"
+    echo "  down                          -- destroys GKE cluster"
 }
 
 down() {
@@ -174,12 +174,12 @@ case "${1:-usage}" in
     ;;
 
   down)
-      shift
-      down
-      ;;
+    shift
+    down
+    ;;
 
   *)
-      usage
-      exit 1
-      ;;
+    usage
+    exit 1
+    ;;
 esac
