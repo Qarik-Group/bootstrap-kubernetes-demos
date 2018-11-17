@@ -18,6 +18,10 @@ usage() {
 }
 
 down() {
+  [[ "${credhub_base_path:-X}" != "X" ]] && {
+    echo "Testing access to Credhub ${credhub_base_path}..."
+    credhub find -n ${credhub_base_path} > /dev/null
+  }
   gcloud container clusters delete $CLUSTER_NAME --region $CLUSTER_ZONE
 }
 
@@ -42,6 +46,11 @@ up() {
     cf api ${CF_API}
     cf auth ${CF_USERNAME} ${CF_PASSWORD}
     cf target -o ${CF_ORGANIZATION} -s ${CF_SPACE}
+  }
+
+  [[ "${credhub_base_path:-X}" != "X" ]] && {
+    echo "Testing access to Credhub ${credhub_base_path}..."
+    credhub find -n ${credhub_base_path} > /dev/null
   }
 
   gcloud container clusters describe $CLUSTER_NAME --region $CLUSTER_ZONE 2>&1 > /dev/null || {
@@ -166,6 +175,10 @@ case "${1:-usage}" in
           export servicecatalog=1
           export cf_broker=1
           ;;
+        --credhub-store)
+          shift
+          export credhub_base_path=$1
+          ;;
       esac
       shift
     done
@@ -175,6 +188,16 @@ case "${1:-usage}" in
 
   down)
     shift
+    shift
+    while [[ $# -gt 0 ]]; do
+      case "${1:-}" in
+        --credhub-store)
+          shift
+          export credhub_base_path=$1
+          ;;
+      esac
+      shift
+    done
     down
     ;;
 
