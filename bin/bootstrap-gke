@@ -19,15 +19,15 @@ usage() {
 }
 
 down() {
-  [[ "${credhub_base_path:-X}" != "X" ]] && {
-    echo "Deleting values from Credhub ${credhub_base_path}..."
-    credhub delete -n ${credhub_base_path}/gke-project-name
-    credhub delete -n ${credhub_base_path}/gke-cluster-name
-    credhub delete -n ${credhub_base_path}/gke-cluster-zone
-    credhub delete -n ${credhub_base_path}/gke-cluster-region
-    credhub delete -n ${credhub_base_path}/helm-ca
-    credhub delete -n ${credhub_base_path}/helm-tiller-cert
-    credhub delete -n ${credhub_base_path}/helm-tiller-key
+  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+    echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
+    credhub delete -n ${CREDHUB_BASE_PATH}/gke-project-name
+    credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-name
+    credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-zone
+    credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-region
+    credhub delete -n ${CREDHUB_BASE_PATH}/helm-ca
+    credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-cert
+    credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-key
   }
   gcloud container clusters delete $CLUSTER_NAME --region $CLUSTER_ZONE
 }
@@ -55,9 +55,9 @@ up() {
     cf target -o ${CF_ORGANIZATION} -s ${CF_SPACE}
   }
 
-  [[ "${credhub_base_path:-X}" != "X" ]] && {
-    echo "Testing access to Credhub ${credhub_base_path}..."
-    credhub find -n ${credhub_base_path} > /dev/null
+  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+    echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
+    credhub find -n ${CREDHUB_BASE_PATH} > /dev/null
   }
 
   gcloud container clusters describe $CLUSTER_NAME --region $CLUSTER_ZONE 2>&1 > /dev/null || {
@@ -75,12 +75,12 @@ up() {
       --clusterrole=cluster-admin \
       --user=$(gcloud config get-value core/account)
 
-    [[ "${credhub_base_path:-X}" != "X" ]] && {
-      echo "Storing cluster into credhub ${credhub_base_path}..."
-      credhub set -n ${credhub_base_path}/gke-project-name   -t value -v $PROJECT_NAME
-      credhub set -n ${credhub_base_path}/gke-cluster-name   -t value -v $CLUSTER_NAME
-      credhub set -n ${credhub_base_path}/gke-cluster-zone   -t value -v $CLUSTER_ZONE
-      credhub set -n ${credhub_base_path}/gke-cluster-region -t value -v $CLUSTER_REGION
+    [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+      echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
+      credhub set -n ${CREDHUB_BASE_PATH}/gke-project-name   -t value -v $PROJECT_NAME
+      credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-name   -t value -v $CLUSTER_NAME
+      credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-zone   -t value -v $CLUSTER_ZONE
+      credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-region -t value -v $CLUSTER_REGION
     }
   }
   gcloud container clusters get-credentials $CLUSTER_NAME --region $CLUSTER_ZONE
@@ -89,12 +89,12 @@ up() {
     echo "Install/upgrade Tiller Server for Helm"
     helm-manager up
     helm repo update
-    [[ "${credhub_base_path:-X}" != "X" ]] && {
-      echo "Storing helm into credhub ${credhub_base_path}..."
+    [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+      echo "Storing helm into credhub ${CREDHUB_BASE_PATH}..."
       [[ -f $(helm home)/ca.pem ]] && {
-        credhub set -n ${credhub_base_path}/helm-ca -t value -v "$(cat $(helm home)/ca.pem)"
-        credhub set -n ${credhub_base_path}/helm-tiller-cert -t value -v "$(cat $(helm home)/cert.pem)"
-        credhub set -n ${credhub_base_path}/helm-tiller-key -t value -v "$(cat $(helm home)/key.pem)"
+        credhub set -n ${CREDHUB_BASE_PATH}/helm-ca -t value -v "$(cat $(helm home)/ca.pem)"
+        credhub set -n ${CREDHUB_BASE_PATH}/helm-tiller-cert -t value -v "$(cat $(helm home)/cert.pem)"
+        credhub set -n ${CREDHUB_BASE_PATH}/helm-tiller-key -t value -v "$(cat $(helm home)/key.pem)"
       }
     }
   }
@@ -201,7 +201,7 @@ case "${1:-usage}" in
           ;;
         --credhub-store)
           shift
-          export credhub_base_path=$1
+          export CREDHUB_BASE_PATH=$1
           ;;
       esac
       shift
@@ -216,7 +216,7 @@ case "${1:-usage}" in
       case "${1:-}" in
         --credhub-store)
           shift
-          export credhub_base_path=$1
+          export CREDHUB_BASE_PATH=$1
           ;;
       esac
       shift
