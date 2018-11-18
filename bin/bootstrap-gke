@@ -2,9 +2,10 @@
 
 set -eu
 
+export PROJECT_NAME=${PROJECT_NAME:-$(gcloud config get-value core/project)}
+export CLUSTER_REGION=${CLUSTER_REGION:-$(gcloud config get-value compute/region)}
+export CLUSTER_ZONE=${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}
 export CLUSTER_NAME=${CLUSTER_NAME:-knative}
-export CLUSTER_REGION=${CLUSTER_REGION:-us-west1}
-export CLUSTER_ZONE=${CLUSTER_ZONE:-us-west1-c}
 
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
