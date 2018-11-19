@@ -84,7 +84,7 @@ up() {
       credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-region -t value -v $CLUSTER_REGION
     }
   }
-  gcloud container clusters get-credentials $CLUSTER_NAME --region $CLUSTER_ZONE
+  gcloud container clusters get-credentials $CLUSTER_NAME --region $CLUSTER_ZONE --project $PROJECT_NAME
 
   [[ "${helm:-}" == "1" ]] && {
     echo "Install/upgrade Tiller Server for Helm"
