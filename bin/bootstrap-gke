@@ -174,6 +174,7 @@ up() {
   }
 
   [[ "${kubeapps:-}" == "1" ]] && {
+    helm repo add bitnami https://charts.bitnami.com/bitnami
     helm upgrade --install kubeapps bitnami/kubeapps --namespace kubeapps \
       --set tillerProxy.tls.verify=true \
       --set tillerProxy.tls.ca="$(cat $(helm home)/ca.pem)" \
