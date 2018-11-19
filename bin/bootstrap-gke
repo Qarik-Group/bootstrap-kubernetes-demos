@@ -9,7 +9,8 @@ export CLUSTER_NAME=${CLUSTER_NAME:-knative}
 
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
-    echo "  up [--helm|--tiller]         -- deploys Helm"
+    echo "  up [--helm|--tiller]         -- deploys secure Helm"
+    echo "     [--kubeapp]               -- deploys Kubeapps"
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
@@ -171,6 +172,14 @@ up() {
     # kubectl apply -f https://storage.googleapis.com/knative-releases/build/latest/release.yaml --wait
     kubectl apply -f https://github.com/knative/build/releases/download/v0.1.0/release.yaml --wait
   }
+
+  [[ "${kubeapps:-}" == "1" ]] && {
+    helm upgrade --install kubeapps bitnami/kubeapps --namespace kubeapps \
+      --set tillerProxy.tls.verify=true \
+      --set tillerProxy.tls.ca="$(cat $(helm home)/ca.pem)" \
+      --set tillerProxy.tls.key="$(cat $(helm home)/key.pem)" \
+      --set tillerProxy.tls.cert="$(cat $(helm home)/cert.pem)"
+  }
 }
 
 case "${1:-usage}" in
@@ -199,6 +208,10 @@ case "${1:-usage}" in
           export helm=1
           export servicecatalog=1
           export cf_broker=1
+          ;;
+        --kubeapps)
+          export helm=1
+          export kubeapps=1
           ;;
         --credhub-store)
           shift
