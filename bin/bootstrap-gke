@@ -69,7 +69,8 @@ up() {
       --enable-autorepair \
       --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
       --num-nodes=3 \
-      --no-enable-basic-auth --no-issue-client-certificate --enable-ip-alias
+      --no-enable-basic-auth --no-issue-client-certificate --enable-ip-alias \
+      --metadata disable-legacy-endpoints=true
 
     kubectl create clusterrolebinding cluster-admin-binding \
       --clusterrole=cluster-admin \
