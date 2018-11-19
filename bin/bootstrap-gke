@@ -29,7 +29,7 @@ down() {
     credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-cert
     credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-key
   }
-  gcloud container clusters delete $CLUSTER_NAME --region $CLUSTER_ZONE
+  gcloud container clusters delete $CLUSTER_NAME --region $CLUSTER_ZONE --quiet
 }
 
 up() {
