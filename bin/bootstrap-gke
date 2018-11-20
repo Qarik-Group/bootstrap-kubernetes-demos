@@ -210,7 +210,8 @@ up() {
       --set tillerProxy.tls.verify=true \
       --set tillerProxy.tls.ca="$(cat $(helm home)/ca.pem)" \
       --set tillerProxy.tls.key="$(cat $(helm home)/key.pem)" \
-      --set tillerProxy.tls.cert="$(cat $(helm home)/cert.pem)"
+      --set tillerProxy.tls.cert="$(cat $(helm home)/cert.pem)" \
+      --wait
 
     echo "Use the following token to authenticate:"
     echo "kubectl get secret \$(kubectl get serviceaccount kubeapps-operator -o jsonpath='{.secrets[].name}') -o jsonpath='{.data.token}' | base64 --decode"
