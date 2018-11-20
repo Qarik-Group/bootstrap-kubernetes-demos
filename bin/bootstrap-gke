@@ -6,6 +6,7 @@ export PROJECT_NAME=${PROJECT_NAME:-$(gcloud config get-value core/project)}
 export CLUSTER_REGION=${CLUSTER_REGION:-$(gcloud config get-value compute/region)}
 export CLUSTER_ZONE=${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}
 export CLUSTER_NAME=${CLUSTER_NAME:-knative}
+export MACHINE_TYPE=${MACHINE_TYPE:-n1-standard-2}
 
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
@@ -62,20 +63,42 @@ up() {
   }
 
   gcloud container clusters describe $CLUSTER_NAME --region $CLUSTER_ZONE 2>&1 > /dev/null || {
+    echo "Creating GKE cluster..."
+    additional_flags=
+    [[ "${cfcontainers:-}" == "1" ]] && {
+      echo "- Using UBUNTU image-type for cf-containers/eirini requirements"
+      # https://github.com/SUSE/scf/wiki/Deployment-on-Google-GKE
+      additional_flags="${additional_flags} --image-type UBUNTU"
+      # TODO -  additional_flags="${additional_flags} --addons=HttpLoadBalancing"
+      # see https://cloud.google.com/sdk/gcloud/reference/container/clusters/create
+      additional_flags="${additional_flags} --no-enable-autorepair" # not supported for UBUNTU
+      additional_flags="${additional_flags} --no-enable-autoupgrade" # not supported for UBUNTU
+    }
     gcloud container clusters create $CLUSTER_NAME \
       --region=$CLUSTER_ZONE \
       --cluster-version=latest \
-      --machine-type=n1-standard-2 \
+      --machine-type=${MACHINE_TYPE} \
       --enable-autoscaling --min-nodes=1 --max-nodes=5 \
       --enable-autorepair \
       --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
       --num-nodes=3 \
       --no-enable-basic-auth --no-issue-client-certificate --enable-ip-alias \
-      --metadata disable-legacy-endpoints=true
+      --metadata disable-legacy-endpoints=true \
+      ${additional_flags}
 
     kubectl create clusterrolebinding cluster-admin-binding \
       --clusterrole=cluster-admin \
       --user=$(gcloud config get-value core/account)
+
+    [[ "${cfcontainers:-}" == "1" ]] && {
+      echo "- Update nodes to support cgroup swap accounting..."
+      instance_names=$(gcloud compute instances list --filter=name~$CLUSTER_NAME --format json | jq --raw-output '.[].name')
+      echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg"
+      # Update grub
+      echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
+      # Restart VMs
+      echo "$instance_names" | xargs gcloud compute instances reset
+    }
 
     [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
       echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
@@ -174,12 +197,21 @@ up() {
   }
 
   [[ "${kubeapps:-}" == "1" ]] && {
+    # TODO: convert to kubectl apply -f <()
+    set +e
+    kubectl create serviceaccount kubeapps-operator
+    kubectl create clusterrolebinding kubeapps-operator --clusterrole=cluster-admin --serviceaccount=default:kubeapps-operator
+    set -e
+
     helm repo add bitnami https://charts.bitnami.com/bitnami
     helm upgrade --install kubeapps bitnami/kubeapps --namespace kubeapps \
       --set tillerProxy.tls.verify=true \
       --set tillerProxy.tls.ca="$(cat $(helm home)/ca.pem)" \
       --set tillerProxy.tls.key="$(cat $(helm home)/key.pem)" \
       --set tillerProxy.tls.cert="$(cat $(helm home)/cert.pem)"
+
+    echo "Use the following token to authenticate:"
+    echo "kubectl get secret \$(kubectl get serviceaccount kubeapps-operator -o jsonpath='{.secrets[].name}') -o jsonpath='{.data.token}' | base64 --decode"
   }
 }
 
@@ -188,6 +220,10 @@ case "${1:-usage}" in
     shift
     while [[ $# -gt 0 ]]; do
       case "${1:-}" in
+        --cfcontainers)
+          export cfcontainers=1
+          export helm=1
+          ;;
         --knative)
           export knative=1
           ;;
