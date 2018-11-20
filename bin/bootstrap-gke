@@ -23,6 +23,7 @@ usage() {
 down() {
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
+    set +e
     credhub delete -n ${CREDHUB_BASE_PATH}/gke-project-name
     credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-name
     credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-zone
@@ -30,6 +31,7 @@ down() {
     credhub delete -n ${CREDHUB_BASE_PATH}/helm-ca
     credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-cert
     credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-key
+    set -e
   }
   gcloud container clusters delete $CLUSTER_NAME --region $CLUSTER_ZONE --quiet
 }
