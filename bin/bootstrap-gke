@@ -131,6 +131,10 @@ up() {
     helm upgrade --install catalog svc-cat/catalog --namespace catalog --wait
   }
   [[ "${cf_broker:-}" == "1" ]] && {
+    [[ "$(helm plugin list | grep "^s3 ")X" == "X" ]] && {
+      echo "Install helm-s3 plugin"
+      helm plugin install https://github.com/hypnoglow/helm-s3.git
+    }
     echo "Install/upgrade CF Marketplace Service Broker via Helm"
     helm repo add starkandwayne s3://helm.starkandwayne.com/charts
     helm repo update
