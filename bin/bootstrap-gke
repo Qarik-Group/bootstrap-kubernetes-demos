@@ -139,10 +139,10 @@ up() {
     helm repo add starkandwayne s3://helm.starkandwayne.com/charts
     helm repo update
     helm upgrade --install --namespace catalog pws-broker starkandwayne/cf-marketplace-servicebroker --wait \
-    --set "cf.api=$CF_API" \
-    --set "cf.username=${CF_USERNAME:?required},cf.password=${CF_PASSWORD:?required}" \
-    --set "cf.organizationGUID=$(jq -r .OrganizationFields.GUID ~/.cf/config.json)" \
-    --set "cf.spaceGUID=$(jq -r .SpaceFields.GUID ~/.cf/config.json)"
+      --set "cf.api=$CF_API" \
+      --set "cf.username=${CF_USERNAME:?required},cf.password=${CF_PASSWORD:?required}" \
+      --set "cf.organizationGUID=$(jq -r .OrganizationFields.GUID ~/.cf/config.json)" \
+      --set "cf.spaceGUID=$(jq -r .SpaceFields.GUID ~/.cf/config.json)"
 
     # TODO: move into a kubectl apply -f <(echo "--- {}")
     set +e
