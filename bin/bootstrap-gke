@@ -8,6 +8,10 @@ export CLUSTER_ZONE=${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}
 export CLUSTER_NAME=${CLUSTER_NAME:-knative}
 export MACHINE_TYPE=${MACHINE_TYPE:-n1-standard-2}
 
+export knative_istio_version=${ISTIO_VERSION:-1.2.0}
+export knative_version=${KNATIVE_VERSION:-0.7.1}
+export knative_build_version=${KNATIVE_BUILD_VERSION:-0.7.0}
+
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
     echo "  up [--helm|--tiller]         -- deploys secure Helm"
@@ -84,7 +88,9 @@ up() {
       --enable-autorepair \
       --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
       --num-nodes=3 \
-      --no-enable-basic-auth --no-issue-client-certificate --enable-ip-alias \
+      --no-enable-basic-auth \
+      --no-issue-client-certificate \
+      --enable-ip-alias \
       --metadata disable-legacy-endpoints=true \
       ${additional_flags}
 
@@ -160,9 +166,18 @@ up() {
 
   [[ "${knative:-}" == "1" ]] && {
     echo "Install/upgrade Knative without monitoring"
-    knctl install --exclude-monitoring
+    kubectl apply --wait=true \
+      --filename https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-crds.yaml \
+      --filename https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-lean.yaml
 
-    knctl domain create --default --domain knative.starkandwayne.com
+    kubectl apply --wait=true \
+      --filename https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml \
+      --filename https://github.com/knative/build/releases/download/v${knative_build_version}/build.yaml
+
+    # kubectl apply --wait=true \
+    #   --filename https://github.com/knative/serving/releases/download/v${knative_version}/monitoring.yaml
+
+    # knctl domain create --default --domain knative.starkandwayne.com
 
     echo "Deploy sanity test app to Knative"
     set +e
@@ -187,7 +202,7 @@ up() {
     address=$(gcloud compute addresses describe knative-ingress --region $CLUSTER_REGION --format json)
     ip=$(echo "$address" | jq -r ".address")
     echo "Mapping Knative Ingress Gateway to $ip..."
-    kubectl patch svc knative-ingressgateway --namespace istio-system --patch \
+    kubectl patch svc istio-ingressgateway --namespace istio-system --patch \
       $(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")
 
     echo
@@ -198,8 +213,7 @@ up() {
 
   [[ "${knative_build:-}" == "1" ]] && {
     echo "Install/upgrade Knative Build"
-    # kubectl apply -f https://storage.googleapis.com/knative-releases/build/latest/release.yaml --wait
-    kubectl apply -f https://github.com/knative/build/releases/download/v0.1.0/release.yaml --wait
+    kubectl apply -f https://github.com/knative/build/releases/download/v${knative_build_version}/build.yaml --wait
   }
 
   [[ "${kubeapps:-}" == "1" ]] && {
