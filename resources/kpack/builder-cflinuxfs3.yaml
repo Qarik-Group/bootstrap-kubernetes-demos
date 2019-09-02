@@ -1,0 +1,7 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: Builder
+metadata:
+  name: cflinuxfs3-builder
+spec:
+  image: cloudfoundry/cnb:cflinuxfs3
+  updatePolicy: polling

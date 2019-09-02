@@ -169,6 +169,8 @@ up() {
   [[ "${kpack:-}" == "1" ]] && {
     echo "Install kpack v${kpack_version}"
     kubectl apply -f <(curl -L https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release.yaml)
+    echo "Installing resources from resources/kpack/*.yaml"
+    ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
   }
 
   [[ "${knative:-}" == "1" ]] && {
