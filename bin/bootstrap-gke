@@ -20,6 +20,7 @@ usage() {
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo "     [--kpack]         -- deploys kpack to build images with buildpacks"
+    echo "     [--tekton]        -- deploys Tekton CD"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
     echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--knative-build] -- deploys nightly Knative Build"
@@ -173,6 +174,13 @@ up() {
     ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
   }
 
+  [[ "${tekton:-}" == "1" ]] && {
+    echo "Install tekton"
+    kubectl apply --filename https://storage.googleapis.com/tekton-releases/latest/release.yaml
+    echo "Installing resources from resources/tekton/*.yaml"
+    ls resources/tekton/*.yaml | xargs -L1 kubectl apply -f
+  }
+
   [[ "${knative:-}" == "1" ]] && {
     echo "Install/upgrade Knative without monitoring"
     kubectl apply --wait=true \
@@ -256,6 +264,9 @@ case "${1:-usage}" in
           ;;
         --kpack)
           export kpack=1
+          ;;
+        --tekton)
+          export tekton=1
           ;;
         --knative)
           export knative=1
