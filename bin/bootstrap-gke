@@ -5,7 +5,7 @@ set -eu
 export PROJECT_NAME=${PROJECT_NAME:-$(gcloud config get-value core/project)}
 export CLUSTER_REGION=${CLUSTER_REGION:-$(gcloud config get-value compute/region)}
 export CLUSTER_ZONE=${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}
-export CLUSTER_NAME=${CLUSTER_NAME:-knative}
+export CLUSTER_NAME=${CLUSTER_NAME:-"$(whoami)-dev"}
 export MACHINE_TYPE=${MACHINE_TYPE:-n1-standard-2}
 
 export kpack_version=${KPACK_VERSION:-0.0.3}
@@ -14,7 +14,7 @@ export knative_version=${KNATIVE_VERSION:-0.7.1}
 export knative_build_version=${KNATIVE_BUILD_VERSION:-0.7.0}
 
 usage() {
-    echo "Bootstrap Kube/Helm/Knative on GKE"
+    echo "Bootstrap GKE and subsystems:"
     echo "  up [--helm|--tiller] -- deploys secure Helm"
     echo "     [--cf|--eirini]   -- deploys Cloud Foundry/Eirini"
     echo "     [--kpack]         -- deploys kpack to build images with buildpacks"
