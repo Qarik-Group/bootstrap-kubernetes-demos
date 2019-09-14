@@ -15,15 +15,16 @@ export knative_build_version=${KNATIVE_BUILD_VERSION:-0.7.0}
 
 usage() {
     echo "Bootstrap Kube/Helm/Knative on GKE"
-    echo "  up [--helm|--tiller]         -- deploys secure Helm"
-    echo "     [--kubeapp]               -- deploys Kubeapps"
-    echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
-    echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
+    echo "  up [--helm|--tiller] -- deploys secure Helm"
+    echo "     [--cf|--eirini]   -- deploys Cloud Foundry/Eirini"
     echo "     [--kpack]         -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]        -- deploys Tekton CD"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
     echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--knative-build] -- deploys nightly Knative Build"
+    echo "     [--kubeapp]               -- deploys Kubeapps"
+    echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
+    echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo "  down                          -- destroys GKE cluster"
 }
 
@@ -174,6 +175,20 @@ up() {
     ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
   }
 
+  [[ "${cfeirini:-}" == "1" ]] && {
+    echo "Install Cloud Foundry/Quarks (cf-operator)"
+    helm upgrade --install --wait --namespace scf \
+      cf-operator \
+      resources/eirini/cf-operator \
+      --set "provider=gke"
+
+    echo "Install Cloud Foundry/Eirini (scf)"
+    helm upgrade --install --wait --namespace scf \
+      scf \
+      resources/eirini/scf \
+      --set "system_domain=scf.suse.dev"
+  }
+
   [[ "${tekton:-}" == "1" ]] && {
     echo "Install tekton"
     kubectl apply --filename https://storage.googleapis.com/tekton-releases/latest/release.yaml
@@ -261,6 +276,10 @@ case "${1:-usage}" in
         --cfcontainers)
           export cfcontainers=1
           export helm=1
+          ;;
+        --cf|--eirini)
+          export helm=1
+          export cfeirini=1
           ;;
         --kpack)
           export kpack=1
