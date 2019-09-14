@@ -1,0 +1,41 @@
+# Configure the persistent disk in the way that cf-operator can provision.
+- type: remove
+  path: /instance_groups/name=singleton-blobstore/persistent_disk_type
+- type: replace
+  path: /instance_groups/name=singleton-blobstore/persistent_disk?
+  value: 102400 # 100GB
+
+# Override the addresses for the jobs under the singleton-blobstore instance group.
+- type: replace
+  path: /instance_groups/name=singleton-blobstore/jobs/name=blobstore/properties/internal_server_name?
+  value: ((deployment-name))-singleton-blobstore
+- type: replace
+  path: /instance_groups/name=singleton-blobstore/jobs/name=route_registrar/properties/nats?/machines
+  value:
+  - ((deployment-name))-nats
+- type: replace
+  path: /instance_groups/name=singleton-blobstore/jobs/name=route_registrar/properties/route_registrar?/routing_api/api_url
+  value: http://((deployment-name))-api:3000
+- type: replace
+  path: /instance_groups/name=singleton-blobstore/jobs/name=route_registrar/properties/route_registrar?/routing_api/oauth_url
+  value: https://((deployment-name))-uaa:8443
+
+- type: replace
+  path: /instance_groups/name=singleton-blobstore/jobs/name=blobstore/properties/quarks?
+  value:
+    ports:
+    - name: http
+      protocol: TCP
+      internal: 8080
+    - name: https
+      protocol: TCP
+      internal: 4443
+    run:
+      security_context:
+        runAsUser: 1000 # vcap
+      healthcheck:
+        nginx: &nginx_healthcheck
+          readiness:
+            exec:
+              command: ['sh', '-c', 'ss -nlt | grep "LISTEN.*:8080" && ss -nlt | grep "LISTEN.*:4443"']
+        url_signer: *nginx_healthcheck

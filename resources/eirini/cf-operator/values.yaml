@@ -1,0 +1,27 @@
+# Default values for cf-operator.
+image:
+  repository: cf-operator
+  org: cfcontainerization
+  tag: v0.4.0-1.g3d277af0
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+customResources:
+  enableInstallation: true
+
+rbacEnable: true
+
+serviceAccount:
+  cfOperatorServiceAccount:
+    create: true
+    name:
+
+provider: ""

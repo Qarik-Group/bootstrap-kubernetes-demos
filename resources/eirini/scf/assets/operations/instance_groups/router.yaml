@@ -1,0 +1,35 @@
+# Override the addresses for the jobs under the router instance group.
+- type: replace
+  path: /instance_groups/name=router/jobs/name=gorouter/properties/router/dns_health_check_host?
+  value: ((deployment-name))-uaa
+- type: replace
+  path: /instance_groups/name=router/jobs/name=gorouter/properties/uaa/token_endpoint?
+  value: ((deployment-name))-uaa
+- type: replace
+  path: /instance_groups/name=router/jobs/name=gorouter/properties/routing_api/uri?
+  value: http://((deployment-name))-api
+- type: replace
+  path: /instance_groups/name=router/jobs/name=gorouter/properties/nats?/machines
+  value:
+  - ((deployment-name))-nats
+
+# Add quarks properties for the gorouter job.
+- type: replace
+  path: /instance_groups/name=router/jobs/name=gorouter/properties/quarks?
+  value:
+    ports:
+    - name: router
+      protocol: TCP
+      internal: 8000
+      public: true
+    - name: router-ssl
+      protocol: TCP
+      internal: 443
+    run:
+      healthcheck:
+        gorouter:
+          readiness: &gorouter_readiness
+            exec:
+              command: ['curl', '--fail', '--head', 'http://127.0.0.1:8080/health']
+    post_start:
+      condition: *gorouter_readiness

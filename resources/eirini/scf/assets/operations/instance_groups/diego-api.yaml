@@ -1,0 +1,67 @@
+# Selectively remove jobs temporarily.
+- type: remove
+  path: /instance_groups/name=diego-api/jobs/name=silk-controller
+
+# Override the addresses for the jobs under the diego-api instance group.
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=locket/properties/diego/locket/sql/db_host
+  value: ((deployment-name))-database
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/sql/db_host
+  value: ((deployment-name))-database
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/locket?/api_location
+  value: 127.0.0.1:8891
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/auctioneer?/api_location
+  value: ((deployment-name))-scheduler:9016
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/advertisement_base_hostname?
+  value: ((deployment-name))-diego-api
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=cfdot/properties/bbs?/hostname
+  value: 127.0.0.1
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=cfdot/properties/locket?/hostname
+  value: 127.0.0.1
+
+# Disable tuning /proc/sys kernel parameters as locket and bbs are running on containers.
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=locket/properties/set_kernel_parameters?
+  value: false
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=bbs/properties/set_kernel_parameters?
+  value: false
+
+# Add quarks properties for locket.
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=locket/properties/quarks?
+  value:
+    ports:
+    - name: locket
+      protocol: TCP
+      internal: 8891
+
+# Add quarks properties for bbs.
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=bbs/properties/quarks?
+  value:
+    ports:
+    - name: cell-bbs-api
+      protocol: TCP
+      internal: 8889
+    run:
+      healthcheck:
+        bbs:
+          readiness: &bbs_readiness
+            exec:
+              command:
+              - sh
+              - -c
+              - ss -nlt | grep "LISTEN.*:8889"
+    post_start:
+      condition: *bbs_readiness
+
+- type: replace
+  path: /instance_groups/name=diego-api/jobs/name=cfdot/properties/quarks?/bpm/processes
+  value: []
