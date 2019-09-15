@@ -42,6 +42,7 @@ export PROJECT_NAME=${PROJECT_NAME:-$(gcloud config get-value core/project)}
 export CLUSTER_REGION=${CLUSTER_REGION:-$(gcloud config get-value compute/region)}
 export CLUSTER_ZONE=${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}
 export CLUSTER_NAME=${CLUSTER_NAME:-$(whoami)-dev}
+export CLUSTER_VERSION=${CLUSTER_VERSION:-latest}
 export MACHINE_TYPE=${MACHINE_TYPE:-n1-standard-2}
 ```
 
