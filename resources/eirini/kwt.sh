@@ -5,9 +5,9 @@
 set -eu
 
 : ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
+: ${CF_NAMESPACE:=scf}
 
-# api_ip=$(kubectl get svc -n scf scf-router-0 -o json | jq -r .spec.clusterIP)
-api_ip=$(kubectl get svc -n scf scf-router-0 --template '{{.spec.clusterIP}}')
+api_ip=$(kubectl get svc -n ${CF_NAMESPACE} scf-router-0 --template '{{.spec.clusterIP}}')
 echo "Mapping *.${CF_SYSTEM_DOMAIN} to internal IP ${api_ip}..."
 echo
 echo "Login with:"
