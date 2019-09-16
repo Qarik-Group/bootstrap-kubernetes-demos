@@ -192,8 +192,8 @@ up() {
       resources/eirini/scf \
       --set "system_domain=${CF_SYSTEM_DOMAIN}"
 
-    echo "Create Load Balancer for ${CF_SYSTEM_DOMAIN}"
-    kubectl apply -n ${CF_NAMESPACE} -f resources/eirini/ingress.yaml
+    # echo "Create Load Balancer for ${CF_SYSTEM_DOMAIN}"
+    # kubectl apply -n ${CF_NAMESPACE} -f resources/eirini/ingress.yaml
   }
 
   [[ "${tekton:-}" == "1" ]] && {
