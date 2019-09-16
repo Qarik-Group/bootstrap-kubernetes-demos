@@ -9,6 +9,12 @@ direnv allow
 export PATH=$PWD/bin:$PATH
 ```
 
+Login to Google Cloud:
+
+```plain
+gcloud auth login
+```
+
 To deploy a GKE cluster:
 
 ```plain
