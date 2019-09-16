@@ -33,7 +33,7 @@ Bootstrap GKE and subsystems:
   down                          -- destroys GKE cluster
 ```
 
-### Configuration
+## Configuration
 
 There are several environment variables that can be set to override defaults:
 
