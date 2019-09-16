@@ -9,6 +9,9 @@ export CLUSTER_NAME=${CLUSTER_NAME:-"$(whoami)-dev"}
 export CLUSTER_VERSION=${CLUSTER_VERSION:-latest}
 export MACHINE_TYPE=${MACHINE_TYPE:-n1-standard-2}
 
+: ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
+: ${CF_NAMESPACE:=scf}
+
 export kpack_version=${KPACK_VERSION:-0.0.3}
 export knative_istio_version=${ISTIO_VERSION:-1.2.0}
 export knative_version=${KNATIVE_VERSION:-0.7.1}
@@ -178,16 +181,19 @@ up() {
 
   [[ "${cfeirini:-}" == "1" ]] && {
     echo "Install Cloud Foundry/Quarks (cf-operator)"
-    helm upgrade --install --wait --namespace scf \
+    helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       cf-operator \
       resources/eirini/cf-operator \
       --set "provider=gke"
 
-    echo "Install Cloud Foundry/Eirini (scf)"
-    helm upgrade --install --wait --namespace scf \
+    echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
+    helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       scf \
       resources/eirini/scf \
-      --set "system_domain=scf.suse.dev"
+      --set "system_domain=${CF_SYSTEM_DOMAIN}"
+
+    echo "Create Load Balancer for ${CF_SYSTEM_DOMAIN}"
+    kubectl apply -n ${CF_NAMESPACE} -f resources/eirini/ingress.yaml
   }
 
   [[ "${tekton:-}" == "1" ]] && {
