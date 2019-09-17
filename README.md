@@ -57,7 +57,7 @@ There are several environment variables that can be set to override defaults:
 To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag:
 
 ```plain
-bootstrap-gke --cf
+bootstrap-gke up --cf
 ```
 
 You can override some defaults by setting the following environment variables before running the command above:
