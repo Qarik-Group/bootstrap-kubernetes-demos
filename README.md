@@ -108,6 +108,12 @@ cf create-space dev
 cf target -s dev
 ```
 
+Next, upgrade all the installed buildpacks:
+
+```plain
+curl https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/update-only.sh | bash
+```
+
 Find sample applications at https://github.com/cloudfoundry-samples.
 
 ```plain
