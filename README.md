@@ -52,6 +52,74 @@ There are several environment variables that can be set to override defaults:
 : ${MACHINE_TYPE:=n1-standard-2}
 ```
 
+### Cloud Foundry / Eirini / Quarks
+
+To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag:
+
+```plain
+bootstrap-gke --cf
+```
+
+You can override some defaults by setting the following environment variables before running the command above:
+
+```bash
+: ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
+: ${CF_NAMESPACE:=scf}
+```
+
+Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. But fear not. You can run `kwt net start` to proxy any requests to CF or to applications running on CF from your local machine.
+
+The [`kwt`](https://github.com/k14s/kwt) CLI can be installed to MacOS with Homebrew:
+
+```plain
+brew install k14s/tap/kwt
+```
+
+Run the helper script to configure and run `kwt net start` proxy services:
+
+```plain
+./resources/eirini/kwt.sh
+```
+
+Provide your sudo root password at the prompt.
+
+The `kwt net start` command launches a new pod `kwt-net` in the `scf` namespace, which is used to proxy your traffic into the cluster.
+
+The `kwt` proxy is ready when the output looks similar to:
+
+```plain
+...
+07:17:27AM: info: KubeEntryPoint: Waiting for networking pod 'kwt-net' in namespace 'scf' to start...
+...
+07:17:47AM: info: ForwardingProxy: Ready!
+```
+
+In another terminal you can now `cf login` and `cf push` apps:
+
+```plain
+cf login -a https://api.scf.suse.dev --skip-ssl-validation -u admin \
+   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"
+```
+
+You can now create organizations, spaces, and deploy applications:
+
+```plain
+cf create-space dev
+cf target -s dev
+```
+
+Find sample applications at https://github.com/cloudfoundry-samples.
+
+```plain
+git clone https://github.com/cloudfoundry-samples/cf-sample-app-nodejs
+cd cf-sample-app-nodejs
+cf push
+```
+
+Load the application URL into your browser, accept the risks of "insecure" self-signed certificates, and your application will look like:
+
+![app](https://cl.ly/9ebcd7a4e4b9/cf-nodejs-app.png)
+
 ## Shutdown
 
 To destroy the GKE cluster:
