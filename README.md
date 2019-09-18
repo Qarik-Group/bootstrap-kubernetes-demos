@@ -15,6 +15,13 @@ Login to Google Cloud:
 gcloud auth login
 ```
 
+Target a Google Cloud region/zone:
+
+```plain
+gcloud config set compute/region australia-southeast1
+gcloud config set compute/zone   australia-southeast1-a
+```
+
 To deploy a GKE cluster:
 
 ```plain
