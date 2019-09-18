@@ -1,12 +1,12 @@
 # Bootstrap Kubernetes on Google Cloud (GKE) and other subsystems
 
 ```plain
-git clone https://github.com/starkandwayne/bootstrap-gke.git
+git clone --recurse-submodules https://github.com/starkandwayne/bootstrap-gke.git
 cd bootstrap-gke
 
 direnv allow
 # or
-export PATH=$PWD/bin:$PATH
+export PATH=$PWD/bin:$PWD/vendor/helm-tiller-manager/bin:$PATH
 ```
 
 Login to Google Cloud:
