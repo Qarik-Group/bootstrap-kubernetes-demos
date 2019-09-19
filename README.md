@@ -134,6 +134,13 @@ The [`kwt`](https://github.com/k14s/kwt) CLI can be installed to MacOS with Home
 ```plain
 brew install k14s/tap/kwt
 ```
+Install KWT on linux:
+
+```plain
+wget https://github.com/k14s/kwt/releases/download/v0.0.5/kwt-linux-amd64 
+chmod +x kwt-linux-amd64 && sudo mv kwt-linux-amd64 /usr/local/bin/kwt
+```
+
 
 Run the helper script to configure and run `kwt net start` proxy services:
 
