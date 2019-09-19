@@ -102,7 +102,7 @@ The `kwt` proxy is ready when the output looks similar to:
 ```
 
 In another terminal you can now `cf login` and `cf push` apps:
-
+(Beware if you useing linux use base64 -d (lowercase D!)
 ```plain
 cf login -a https://api.scf.suse.dev --skip-ssl-validation -u admin \
    -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"
