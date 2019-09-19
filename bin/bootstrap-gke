@@ -192,6 +192,8 @@ up() {
       resources/eirini/scf \
       --set "system_domain=${CF_SYSTEM_DOMAIN}"
 
+    echo "Upgrade buildpacks"
+    kubectl apply -n scf -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-job.yaml
     # echo "Create Load Balancer for ${CF_SYSTEM_DOMAIN}"
     # kubectl apply -n ${CF_NAMESPACE} -f resources/eirini/ingress.yaml
   }
