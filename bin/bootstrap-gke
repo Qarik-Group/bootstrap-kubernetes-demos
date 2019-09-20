@@ -12,7 +12,7 @@ set -eu
 : ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
 : ${CF_NAMESPACE:=scf}
 
-export kpack_version=${KPACK_VERSION:-0.0.3}
+export kpack_version=${KPACK_VERSION:-0.0.4}
 export knative_istio_version=${ISTIO_VERSION:-1.2.0}
 export knative_version=${KNATIVE_VERSION:-0.7.1}
 export knative_build_version=${KNATIVE_BUILD_VERSION:-0.7.0}
@@ -174,7 +174,7 @@ up() {
 
   [[ "${kpack:-}" == "1" ]] && {
     echo "Install kpack v${kpack_version}"
-    kubectl apply -f <(curl -L https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release.yaml)
+    kubectl apply -f <(curl -L https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml)
     echo "Installing resources from resources/kpack/*.yaml"
     ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
   }
