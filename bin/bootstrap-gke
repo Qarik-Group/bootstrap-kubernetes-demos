@@ -12,6 +12,9 @@ set -eu
 : ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
 : ${CF_NAMESPACE:=scf}
 
+# helm-manager can put its state into this project, not its own
+export HELM_MGR_STATE_ROOT=state/helm
+
 export kpack_version=${KPACK_VERSION:-0.0.4}
 export knative_istio_version=${ISTIO_VERSION:-1.2.0}
 export knative_version=${KNATIVE_VERSION:-0.7.1}
@@ -52,7 +55,7 @@ up() {
   errors=
   [[ "$(which gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH"; errors=1; }
   [[ "$(which kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH"; errors=1; }
-  [[ "${helm:-}" == "1" && "$(which helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI from \$PATH"; errors=1; }
+  [[ "${helm:-}" == "1" && "$(which helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder"; errors=1; }
   [[ "${cf_broker:-}" == "1" ]] && {
     : ${CF_API:?required for --cf-broker}
     : ${CF_USERNAME:?required for --cf-broker}
