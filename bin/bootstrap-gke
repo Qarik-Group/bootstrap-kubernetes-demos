@@ -62,7 +62,6 @@ up() {
     : ${CF_PASSWORD:?required for --cf-broker}
     : ${CF_ORGANIZATION:?required for --cf-broker}
     : ${CF_SPACE:?required for --cf-broker}
-    : ${CF_MARKETPLACE_BROKER_PATH:?need /path/to/cf-marketplace-servicebroker}
   }
   [[ "${knative:-}" == "1" && "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
   [[ "$errors" == "1" ]] && { exit 1; }
@@ -148,12 +147,8 @@ up() {
     helm upgrade --install catalog svc-cat/catalog --namespace catalog --wait
   }
   [[ "${cf_broker:-}" == "1" ]] && {
-    [[ "$(helm plugin list | grep "^s3 ")X" == "X" ]] && {
-      echo "Install helm-s3 plugin"
-      helm plugin install https://github.com/hypnoglow/helm-s3.git
-    }
     echo "Install/upgrade CF Marketplace Service Broker via Helm"
-    helm repo add starkandwayne s3://helm.starkandwayne.com/charts
+    helm repo add starkandwayne https://helm.starkandwayne.com
     helm repo update
     helm upgrade --install --namespace catalog pws-broker starkandwayne/cf-marketplace-servicebroker --wait \
       --set "cf.api=$CF_API" \
