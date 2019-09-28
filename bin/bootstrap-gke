@@ -24,6 +24,7 @@ usage() {
     echo "Bootstrap GKE and subsystems:"
     echo "  up [--helm|--tiller] -- deploys secure Helm"
     echo "     [--cf|--eirini]   -- deploys Cloud Foundry/Eirini"
+    echo "     [--cf-operator]   -- deploys only CF Operator"
     echo "     [--kpack]         -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]        -- deploys Tekton CD"
     echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
@@ -177,13 +178,15 @@ up() {
     ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
   }
 
-  [[ "${cfeirini:-}" == "1" ]] && {
+  [[ "${cfoperator:-}" == "1" ]] && {
     echo "Install Cloud Foundry/Quarks (cf-operator)"
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       cf-operator \
       resources/eirini/cf-operator \
       --set "provider=gke"
+  }
 
+  [[ "${cfeirini:-}" == "1" ]] && {
     echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       scf \
@@ -286,7 +289,12 @@ case "${1:-usage}" in
           ;;
         --cf|--eirini)
           export helm=1
+          export cfoperator=1
           export cfeirini=1
+          ;;
+        --cf-operator)
+          export helm=1
+          export cfoperator=1
           ;;
         --kpack)
           export kpack=1
