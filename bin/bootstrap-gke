@@ -180,11 +180,14 @@ up() {
 
   [[ "${cfoperator:-}" == "1" ]] && {
     echo "Install Cloud Foundry/Quarks (cf-operator)"
+    [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
+      git submodules update --init
+    }
     cfoperator_tag=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)
     echo "--> Using cfcontainerization/cf-operator:${cfoperator_tag}"
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       cf-operator \
-      resources/eirini/cf-operator \
+      vendor/cf-operator/deploy/helm/cf-operator/ \
       --set "image.tag=${cfoperator_tag}" \
       --set "provider=gke"
   }
