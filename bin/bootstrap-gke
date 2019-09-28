@@ -190,6 +190,11 @@ up() {
       vendor/cf-operator/deploy/helm/cf-operator/ \
       --set "image.tag=${CFOPERATOR_TAG}" \
       --set "provider=gke"
+
+    echo "--> Testing cf-operator with example nats deployment"
+    kubectl apply --wait -n scf -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+    sleep 5 # TODO: wait for boshdeployment state change
+    kubectl get pods -n scf
   }
 
   [[ "${cfeirini:-}" == "1" ]] && {
