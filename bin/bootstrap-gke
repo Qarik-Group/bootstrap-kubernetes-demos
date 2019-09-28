@@ -183,12 +183,12 @@ up() {
     [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
       git submodules update --init
     }
-    cfoperator_tag=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)
-    echo "--> Using cfcontainerization/cf-operator:${cfoperator_tag}"
+    : ${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}
+    echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       cf-operator \
       vendor/cf-operator/deploy/helm/cf-operator/ \
-      --set "image.tag=${cfoperator_tag}" \
+      --set "image.tag=${CFOPERATOR_TAG}" \
       --set "provider=gke"
   }
 
