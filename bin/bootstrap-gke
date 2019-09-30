@@ -16,9 +16,10 @@ set -eu
 export HELM_MGR_STATE_ROOT=state/helm
 
 export kpack_version=${KPACK_VERSION:-0.0.4}
-export knative_istio_version=${ISTIO_VERSION:-1.2.0}
-export knative_version=${KNATIVE_VERSION:-0.7.1}
-export knative_build_version=${KNATIVE_BUILD_VERSION:-0.7.0}
+# https://github.com/knative/serving/tree/master/third_party
+export knative_istio_version=${ISTIO_VERSION:-1.3.0}
+# https://github.com/knative/serving/releases
+export knative_version=${KNATIVE_VERSION:-0.9.0}
 
 usage() {
     echo "Bootstrap GKE and subsystems:"
@@ -27,9 +28,8 @@ usage() {
     echo "     [--cf-operator]   -- deploys only CF Operator"
     echo "     [--kpack]         -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]        -- deploys Tekton CD"
-    echo "     [--knative]       -- deploys Knative Build/Serving/Istio"
+    echo "     [--knative]       -- deploys Knative Serving/Eventing/Istio"
     echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
-    echo "     [--knative-build] -- deploys nightly Knative Build"
     echo "     [--kubeapp]               -- deploys Kubeapps"
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
@@ -64,7 +64,7 @@ up() {
     : ${CF_ORGANIZATION:?required for --cf-broker}
     : ${CF_SPACE:?required for --cf-broker}
   }
-  [[ "${knative:-}" == "1" && "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
+  # [[ "${knative:-}" == "1" && "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
   [[ "$errors" == "1" ]] && { exit 1; }
 
   [[ "${cf_broker:-}" == "1" ]] && {
@@ -219,36 +219,52 @@ up() {
 
   [[ "${knative:-}" == "1" ]] && {
     echo "Install/upgrade Knative without monitoring"
+    echo "---> install istio ${knative_istio_version}"
     kubectl apply --wait=true \
-      --filename https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-crds.yaml \
-      --filename https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-lean.yaml
-
+      --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-crds.yaml"
     kubectl apply --wait=true \
-      --filename https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml \
-      --filename https://github.com/knative/build/releases/download/v${knative_build_version}/build.yaml
+      --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-lean.yaml"
+    echo "---> wait for istio pilot to start"
+    kubectl wait -l app=pilot pod --for condition=Ready -n istio-system --timeout 5m
+    # while [[ $(kubectl get pods -n istio-system -l app=pilot -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
+    echo "---> install knative serving/eventing CRDs"
+    # TODO https://github.com/knative/serving/issues/5722
+    kubectl apply --wait=true \
+      --selector knative.dev/crd-install=true \
+      --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
+      --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml" || \
+    kubectl apply --wait=true \
+      --selector knative.dev/crd-install=true \
+      --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
+      --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
 
-    # kubectl apply --wait=true \
-    #   --filename https://github.com/knative/serving/releases/download/v${knative_version}/monitoring.yaml
+    echo "---> install knative serving/eventing"
+    kubectl apply --wait=true \
+      --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
+      --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+    echo "---> wait for knative to start"
+    kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
+
 
     # knctl domain create --default --domain knative.starkandwayne.com
 
-    echo "Deploy sanity test app to Knative"
-    set +e
-    kubectl create ns bootstrap-test
-    set -e
-    knctl deploy \
-      --namespace bootstrap-test \
-      --service hello \
-      --image gcr.io/knative-samples/helloworld-go \
-      --env TARGET=Bootstrap
+    # echo "Deploy sanity test app to Knative"
+    # set +e
+    # kubectl create ns bootstrap-test
+    # set -e
+    # knctl deploy \
+    #   --namespace bootstrap-test \
+    #   --service hello \
+    #   --image gcr.io/knative-samples/helloworld-go \
+    #   --env TARGET=Bootstrap
 
-    podStatus=Init
-    while [[ "${podStatus}" != "Running" ]]; do
-      sleep 2
-      podStatus=$(kubectl get pods -n bootstrap-test -l serving.knative.dev/configuration=hello -o jsonpath="{.items[0].status.phase}")
-      echo "  ${podStatus}"
-    done
-    knctl curl -n bootstrap-test -s hello
+    # podStatus=Init
+    # while [[ "${podStatus}" != "Running" ]]; do
+    #   sleep 2
+    #   podStatus=$(kubectl get pods -n bootstrap-test -l serving.knative.dev/configuration=hello -o jsonpath="{.items[0].status.phase}")
+    #   echo "  ${podStatus}"
+    # done
+    # knctl curl -n bootstrap-test -s hello
   }
 
   [[ "${knative_addr_name:-X}" != "X" ]] && {
@@ -262,11 +278,6 @@ up() {
     echo "In a while, test your DNS + ingress with:"
     echo "  curl -v hello.bootstrap-test.knative.starkandwayne.com"
     echo
-  }
-
-  [[ "${knative_build:-}" == "1" ]] && {
-    echo "Install/upgrade Knative Build"
-    kubectl apply -f https://github.com/knative/build/releases/download/v${knative_build_version}/build.yaml --wait
   }
 
   [[ "${kubeapps:-}" == "1" ]] && {
@@ -319,9 +330,6 @@ case "${1:-usage}" in
         --knative-addr-name)
           shift
           export knative_addr_name=$1
-          ;;
-        --knative-build)
-          export knative_build=1
           ;;
         --helm|--tiller)
           export helm=1
