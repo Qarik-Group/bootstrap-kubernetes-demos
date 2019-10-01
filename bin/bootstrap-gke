@@ -16,6 +16,7 @@ set -eu
 export HELM_MGR_STATE_ROOT=state/helm
 
 export kpack_version=${KPACK_VERSION:-0.0.4}
+export kpack_release_url=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml"}
 # https://github.com/knative/serving/tree/master/third_party
 export knative_istio_version=${ISTIO_VERSION:-1.3.0}
 # https://github.com/knative/serving/releases
@@ -173,7 +174,7 @@ up() {
 
   [[ "${kpack:-}" == "1" ]] && {
     echo "Install kpack v${kpack_version}"
-    kubectl apply -f <(curl -L "https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml")
+    kubectl apply -f "$kpack_release_url"
     echo "Installing resources from resources/kpack/*.yaml"
     ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
   }
