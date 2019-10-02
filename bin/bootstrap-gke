@@ -214,7 +214,8 @@ up() {
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       scf \
       "$scf_release_url" \
-      --set "system_domain=${CF_SYSTEM_DOMAIN}"
+      --set "system_domain=${CF_SYSTEM_DOMAIN}" \
+      --set "features.eirini=true"
 
     echo "Upgrade buildpacks"
     kubectl apply -n scf -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-update-forever.yaml
