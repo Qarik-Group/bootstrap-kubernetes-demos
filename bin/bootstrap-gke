@@ -2,15 +2,15 @@
 
 set -eu
 
-: ${PROJECT_NAME:=$(gcloud config get-value core/project)}
-: ${CLUSTER_REGION:=$(gcloud config get-value compute/region)}
-: ${CLUSTER_ZONE:=$(gcloud config get-value compute/zone)}
-: ${CLUSTER_NAME:="$(whoami)-dev"}
-: ${CLUSTER_VERSION:=latest}
-: ${MACHINE_TYPE:=n1-standard-2}
+: "${PROJECT_NAME:=$(gcloud config get-value core/project)}"
+: "${CLUSTER_REGION:=$(gcloud config get-value compute/region)}"
+: "${CLUSTER_ZONE:=$(gcloud config get-value compute/zone)}"
+: "${CLUSTER_NAME:="$(whoami)-dev"}"
+: "${CLUSTER_VERSION:=latest}"
+: "${MACHINE_TYPE:=n1-standard-2}"
 
-: ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
-: ${CF_NAMESPACE:=scf}
+: "${CF_SYSTEM_DOMAIN:=scf.suse.dev}"
+: "${CF_NAMESPACE:=scf}"
 
 # helm-manager can put its state into this project, not its own
 export HELM_MGR_STATE_ROOT=state/helm
@@ -41,46 +41,46 @@ down() {
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
     set +e
-    credhub delete -n ${CREDHUB_BASE_PATH}/gke-project-name
-    credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-name
-    credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-zone
-    credhub delete -n ${CREDHUB_BASE_PATH}/gke-cluster-region
-    credhub delete -n ${CREDHUB_BASE_PATH}/helm-ca
-    credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-cert
-    credhub delete -n ${CREDHUB_BASE_PATH}/helm-tiller-key
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-project-name"
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-cluster-name"
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-cluster-region"
+    credhub delete -n "${CREDHUB_BASE_PATH}/helm-ca"
+    credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-cert"
+    credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-key"
     set -e
   }
-  gcloud container clusters delete $CLUSTER_NAME --region $CLUSTER_ZONE --quiet
+  gcloud container clusters delete "$CLUSTER_NAME" --region "$CLUSTER_ZONE" --quiet
 }
 
 up() {
   errors=
-  [[ "$(which gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH"; errors=1; }
-  [[ "$(which kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH"; errors=1; }
-  [[ "${helm:-}" == "1" && "$(which helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder"; errors=1; }
+  [[ "$(command -v gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH"; errors=1; }
+  [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH"; errors=1; }
+  [[ "${helm:-}" == "1" && "$(command -v helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder"; errors=1; }
   [[ "${cf_broker:-}" == "1" ]] && {
-    : ${CF_API:?required for --cf-broker}
-    : ${CF_USERNAME:?required for --cf-broker}
-    : ${CF_PASSWORD:?required for --cf-broker}
-    : ${CF_ORGANIZATION:?required for --cf-broker}
-    : ${CF_SPACE:?required for --cf-broker}
+    : "${CF_API:?required for --cf-broker}"
+    : "${CF_USERNAME:?required for --cf-broker}"
+    : "${CF_PASSWORD:?required for --cf-broker}"
+    : "${CF_ORGANIZATION:?required for --cf-broker}"
+    : "${CF_SPACE:?required for --cf-broker}"
   }
   # [[ "${knative:-}" == "1" && "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
   [[ "$errors" == "1" ]] && { exit 1; }
 
   [[ "${cf_broker:-}" == "1" ]] && {
     echo "Testing login to Cloud Foundry ${CF_API}..."
-    cf api ${CF_API}
-    cf auth ${CF_USERNAME} ${CF_PASSWORD}
-    cf target -o ${CF_ORGANIZATION} -s ${CF_SPACE}
+    cf api "${CF_API}"
+    cf auth "${CF_USERNAME}" "${CF_PASSWORD}"
+    cf target -o "${CF_ORGANIZATION}" -s "${CF_SPACE}"
   }
 
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
-    credhub find -n ${CREDHUB_BASE_PATH} > /dev/null
+    credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
   }
 
-  gcloud container clusters describe $CLUSTER_NAME --region $CLUSTER_ZONE 2>&1 > /dev/null || {
+  gcloud container clusters describe "$CLUSTER_NAME" --region "$CLUSTER_ZONE" 2>&1 > /dev/null || {
     echo "Creating GKE cluster..."
     additional_flags=
     [[ "${cfcontainers:-}" == "1" ]] && {
@@ -92,10 +92,10 @@ up() {
       additional_flags="${additional_flags} --no-enable-autorepair" # not supported for UBUNTU
       additional_flags="${additional_flags} --no-enable-autoupgrade" # not supported for UBUNTU
     }
-    gcloud container clusters create $CLUSTER_NAME \
-      --region=$CLUSTER_ZONE \
-      --cluster-version=${CLUSTER_VERSION} \
-      --machine-type=${MACHINE_TYPE} \
+    gcloud container clusters create "$CLUSTER_NAME" \
+      --region="$CLUSTER_ZONE" \
+      --cluster-version="${CLUSTER_VERSION}" \
+      --machine-type="${MACHINE_TYPE}" \
       --enable-autoscaling --min-nodes=1 --max-nodes=5 \
       --enable-autorepair \
       --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
@@ -108,7 +108,7 @@ up() {
 
     kubectl create clusterrolebinding cluster-admin-binding \
       --clusterrole=cluster-admin \
-      --user=$(gcloud config get-value core/account)
+      --user="$(gcloud config get-value core/account)"
 
     [[ "${cfcontainers:-}" == "1" ]] && {
       echo "- Update nodes to support cgroup swap accounting..."
@@ -122,13 +122,13 @@ up() {
 
     [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
       echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
-      credhub set -n ${CREDHUB_BASE_PATH}/gke-project-name   -t value -v $PROJECT_NAME
-      credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-name   -t value -v $CLUSTER_NAME
-      credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-zone   -t value -v $CLUSTER_ZONE
-      credhub set -n ${CREDHUB_BASE_PATH}/gke-cluster-region -t value -v $CLUSTER_REGION
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-project-name"   -t value -v "$PROJECT_NAME"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$CLUSTER_NAME"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"   -t value -v "$CLUSTER_ZONE"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-region" -t value -v "$CLUSTER_REGION"
     }
   }
-  gcloud container clusters get-credentials $CLUSTER_NAME --region $CLUSTER_ZONE --project $PROJECT_NAME
+  gcloud container clusters get-credentials "$CLUSTER_NAME" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
 
   [[ "${helm:-}" == "1" ]] && {
     echo "Install/upgrade Tiller Server for Helm"
@@ -137,9 +137,9 @@ up() {
     [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
       echo "Storing helm into credhub ${CREDHUB_BASE_PATH}..."
       [[ -f $(helm home)/ca.pem ]] && {
-        credhub set -n ${CREDHUB_BASE_PATH}/helm-ca -t value -v "$(cat $(helm home)/ca.pem)"
-        credhub set -n ${CREDHUB_BASE_PATH}/helm-tiller-cert -t value -v "$(cat $(helm home)/cert.pem)"
-        credhub set -n ${CREDHUB_BASE_PATH}/helm-tiller-key -t value -v "$(cat $(helm home)/key.pem)"
+        credhub set -n "${CREDHUB_BASE_PATH}/helm-ca" -t value -v "$(cat "$(helm home)/ca.pem")"
+        credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-cert" -t value -v "$(cat "$(helm home)/cert.pem")"
+        credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-key" -t value -v "$(cat "$(helm home)/key.pem")"
       }
     }
   }
@@ -184,9 +184,9 @@ up() {
     [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
       git submodules update --init
     }
-    : ${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}
+    : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
     echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
-    helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
+    helm upgrade --install --wait --namespace "${CF_NAMESPACE}" \
       cf-operator \
       vendor/cf-operator/deploy/helm/cf-operator/ \
       --set "image.tag=${CFOPERATOR_TAG}" \
@@ -269,11 +269,11 @@ up() {
   }
 
   [[ "${knative_addr_name:-X}" != "X" ]] && {
-    address=$(gcloud compute addresses describe knative-ingress --region $CLUSTER_REGION --format json)
+    address=$(gcloud compute addresses describe knative-ingress --region "$CLUSTER_REGION" --format json)
     ip=$(echo "$address" | jq -r ".address")
     echo "Mapping Knative Ingress Gateway to $ip..."
     kubectl patch svc istio-ingressgateway --namespace istio-system --patch \
-      $(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")
+      "$(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")"
 
     echo
     echo "In a while, test your DNS + ingress with:"
@@ -291,9 +291,9 @@ up() {
     helm repo add bitnami https://charts.bitnami.com/bitnami
     helm upgrade --install kubeapps bitnami/kubeapps --namespace kubeapps \
       --set tillerProxy.tls.verify=true \
-      --set tillerProxy.tls.ca="$(cat $(helm home)/ca.pem)" \
-      --set tillerProxy.tls.key="$(cat $(helm home)/key.pem)" \
-      --set tillerProxy.tls.cert="$(cat $(helm home)/cert.pem)" \
+      --set tillerProxy.tls.ca="$(cat "$(helm home)/ca.pem")" \
+      --set tillerProxy.tls.key="$(cat "$(helm home)/key.pem")" \
+      --set tillerProxy.tls.cert="$(cat "$(helm home)/cert.pem")" \
       --wait
 
     echo "Use the following token to authenticate:"
