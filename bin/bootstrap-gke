@@ -186,16 +186,16 @@ up() {
     }
     : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
     echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
-    helm upgrade --install --wait --namespace "${CF_NAMESPACE}" \
-      cf-operator \
-      vendor/cf-operator/deploy/helm/cf-operator/ \
+    echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated')"
+    helm template vendor/cf-operator/deploy/helm/cf-operator  \
       --set "image.tag=${CFOPERATOR_TAG}" \
-      --set "provider=gke"
+      --set "provider=gke" | \
+    kubectl apply -n "$CF_NAMESPACE" -f -
 
     echo "--> Testing cf-operator with example nats deployment"
-    kubectl apply --wait -n scf -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+    kubectl apply --wait -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
     sleep 5 # TODO: wait for boshdeployment state change
-    kubectl get pods -n scf
+    kubectl get pods -n "$CF_NAMESPACE"
   }
 
   [[ "${cfeirini:-}" == "1" ]] && {
@@ -316,7 +316,6 @@ case "${1:-usage}" in
           export cfeirini=1
           ;;
         --cf-operator)
-          export helm=1
           export cfoperator=1
           ;;
         --kpack)
