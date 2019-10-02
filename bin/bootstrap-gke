@@ -58,6 +58,7 @@ up() {
   [[ "$(command -v gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH"; errors=1; }
   [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH"; errors=1; }
   [[ "${helm:-}" == "1" && "$(command -v helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder"; errors=1; }
+  [[ "${scf:-}" == "1" && "$(command -v aws)X" == "X" ]] && { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket"; errors=1; }
   [[ "${cf_broker:-}" == "1" ]] && {
     : "${CF_API:?required for --cf-broker}"
     : "${CF_USERNAME:?required for --cf-broker}"
@@ -207,9 +208,12 @@ up() {
 
   [[ "${cfeirini:-}" == "1" ]] && {
     echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
+    latest_scf=$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1)
+    echo "--> Using scf $(echo "$latest_scf" | awk '{print $4}') from $(echo "$latest_scf" | awk '{print $1}')"
+    scf_release_url="https://scf-v3.s3.amazonaws.com/$(echo "$latest_scf" | awk '{print $4}')"
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       scf \
-      resources/eirini/scf \
+      "$scf_release_url" \
       --set "system_domain=${CF_SYSTEM_DOMAIN}"
 
     echo "Upgrade buildpacks"
