@@ -184,13 +184,20 @@ up() {
     [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
       git submodules update --init
     }
+    (
+      cd vendor/cf-operator
+      rm -f helm/*tgz
+      bin/build-helm
+    )
+    cf_operator_helm_tgz=$(ls vendor/cf-operator/helm/cf-operator*tgz)
     : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
     echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
     echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated')"
-    helm template vendor/cf-operator/deploy/helm/cf-operator  \
+    helm upgrade --install --wait --namespace "${CF_NAMESPACE}" \
+      cf-operator \
+      "${cf_operator_helm_tgz}" \
       --set "image.tag=${CFOPERATOR_TAG}" \
-      --set "provider=gke" | \
-    kubectl apply -n "$CF_NAMESPACE" -f -
+      --set "provider=gke"
 
     echo "--> Testing cf-operator with example nats deployment"
     kubectl apply --wait -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
