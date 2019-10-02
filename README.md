@@ -59,6 +59,20 @@ There are several environment variables that can be set to override defaults:
 : ${MACHINE_TYPE:=n1-standard-2}
 ```
 
+## Helm / Tiller
+
+Helm v2 requires a Kubernetes-running component Tiller. The `bootstrap-gke up --helm` command (and others that depend on Helm for installation) will create Tiller for you.
+
+It will also secure it with generated TLS certificates (stored in `state/` folder, and copied into `~/.helm`).
+
+To use `helm` commands yourself, please set the following env var to tell `helm` to use TLS:
+
+```shell
+export HELM_TLS_VERIFY=true
+```
+
+Put that in your `.profile` for all terminal sessions.
+
 ### Cloud Foundry / Eirini / Quarks
 
 To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag:

@@ -15,6 +15,9 @@ set -eu
 # helm-manager can put its state into this project, not its own
 export HELM_MGR_STATE_ROOT=state/helm
 
+# helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
+export HELM_TLS_VERIFY=true
+
 export kpack_version=${KPACK_VERSION:-0.0.4}
 export kpack_release_url=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml"}
 # https://github.com/knative/serving/tree/master/third_party
