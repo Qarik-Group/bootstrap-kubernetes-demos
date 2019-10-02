@@ -4,3 +4,7 @@
 [submodule "vendor/cf-operator"]
 	path = vendor/cf-operator
 	url = https://github.com/cloudfoundry-incubator/cf-operator/
+[submodule "vendor/scf"]
+	path = vendor/scf
+	url = https://github.com/SUSE/scf
+	branch = v3-develop

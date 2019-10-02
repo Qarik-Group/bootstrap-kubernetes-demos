@@ -180,6 +180,7 @@ up() {
   }
 
   [[ "${cfoperator:-}" == "1" ]] && {
+    echo
     echo "Install Cloud Foundry/Quarks (cf-operator)"
     [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
       git submodules update --init
@@ -187,11 +188,13 @@ up() {
     : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
     echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
     echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated')"
+    kubectl apply -f resources/eirini/scf-namespace.yml
     helm template vendor/cf-operator/deploy/helm/cf-operator  \
+      --name cf-operator \
       --set "image.tag=${CFOPERATOR_TAG}" \
       --set "provider=gke" | \
     kubectl apply -n "$CF_NAMESPACE" -f -
-
+    echo
     echo "--> Testing cf-operator with example nats deployment"
     kubectl apply --wait -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
     sleep 5 # TODO: wait for boshdeployment state change
@@ -199,16 +202,15 @@ up() {
   }
 
   [[ "${cfeirini:-}" == "1" ]] && {
+    echo
     echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
-    helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
-      scf \
-      resources/eirini/scf \
-      --set "system_domain=${CF_SYSTEM_DOMAIN}"
+    helm template resources/eirini/scf \
+      --name scf \
+      --set "system_domain=${CF_SYSTEM_DOMAIN}" | \
+    kubectl apply -n "$CF_NAMESPACE" -f -
 
     echo "Upgrade buildpacks"
-    kubectl apply -n scf -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-update-forever.yaml
-    # echo "Create Load Balancer for ${CF_SYSTEM_DOMAIN}"
-    # kubectl apply -n ${CF_NAMESPACE} -f resources/eirini/ingress.yaml
+    kubectl apply -n "$CF_NAMESPACE" -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-update-forever.yaml
   }
 
   [[ "${tekton:-}" == "1" ]] && {
@@ -311,7 +313,6 @@ case "${1:-usage}" in
           export helm=1
           ;;
         --cf|--eirini)
-          export helm=1
           export cfoperator=1
           export cfeirini=1
           ;;
