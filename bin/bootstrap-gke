@@ -25,6 +25,9 @@ export knative_istio_version=${ISTIO_VERSION:-1.3.0}
 # https://github.com/knative/serving/releases
 export knative_version=${KNATIVE_VERSION:-0.9.0}
 
+# Install latest from CI/S3 bucket by default
+export scf_release_url=${SCF_RELEASE_URL:-}
+
 usage() {
     echo "Bootstrap GKE and subsystems:"
     echo "  up [--helm|--tiller] -- deploys secure Helm"
@@ -211,9 +214,11 @@ up() {
 
   [[ "${cfeirini:-}" == "1" ]] && {
     echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
-    latest_scf=$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1)
-    echo "--> Using scf $(echo "$latest_scf" | awk '{print $4}') from $(echo "$latest_scf" | awk '{print $1}')"
-    scf_release_url="https://scf-v3.s3.amazonaws.com/$(echo "$latest_scf" | awk '{print $4}')"
+    [[ "${scf_release_url:-X}" == "X" ]] && {
+      latest_scf=$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1)
+      echo "--> Using scf $(echo "$latest_scf" | awk '{print $4}') from $(echo "$latest_scf" | awk '{print $1}')"
+      scf_release_url="https://scf-v3.s3.amazonaws.com/$(echo "$latest_scf" | awk '{print $4}')"
+    }
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
       scf \
       "$scf_release_url" \
