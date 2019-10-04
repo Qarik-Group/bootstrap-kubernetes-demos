@@ -209,7 +209,7 @@ up() {
       --set "operator-webhook-use-service-reference=true" # coming
 
     echo "--> Testing cf-operator with example nats deployment"
-    kubectl apply --wait -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+    kubectl apply -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
     sleep 5 # TODO: wait for boshdeployment state change
     kubectl get pods -n "$CF_NAMESPACE"
   }
