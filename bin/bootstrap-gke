@@ -205,7 +205,8 @@ up() {
       cf-operator \
       "${cf_operator_helm_tgz}" \
       --set "image.tag=${CFOPERATOR_TAG}" \
-      --set "provider=gke"
+      --set "provider=gke" \
+      --set "operator-webhook-use-service-reference=true" # coming
 
     echo "--> Testing cf-operator with example nats deployment"
     kubectl apply --wait -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
