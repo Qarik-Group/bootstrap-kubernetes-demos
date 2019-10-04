@@ -337,6 +337,7 @@ case "${1:-usage}" in
           export cfeirini=1
           ;;
         --cf-operator)
+          export helm=1
           export cfoperator=1
           ;;
         --kpack)
