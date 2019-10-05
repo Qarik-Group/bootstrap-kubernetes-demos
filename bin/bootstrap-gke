@@ -5,7 +5,6 @@ set -eu
 : "${PROJECT_NAME:=$(gcloud config get-value core/project)}"
 : "${CLUSTER_REGION:=$(gcloud config get-value compute/region)}"
 : "${CLUSTER_ZONE:=$(gcloud config get-value compute/zone)}"
-: "${CLUSTER_NAME:="$(whoami)-dev"}"
 : "${CLUSTER_VERSION:=latest}"
 : "${MACHINE_TYPE:=n1-standard-2}"
 
@@ -29,6 +28,10 @@ export knative_version=${KNATIVE_VERSION:-0.9.0}
 export scf_release_url=${SCF_RELEASE_URL:-}
 # Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
 
+_cluster_name() {
+  echo "${CLUSTER_NAME:="$(whoami)-dev"}"
+}
+
 usage() {
     echo "Bootstrap GKE and subsystems:"
     echo "  up [--helm|--tiller] -- deploys secure Helm"
@@ -41,6 +44,7 @@ usage() {
     echo "     [--kubeapp]               -- deploys Kubeapps"
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
+    echo "  describe                      -- describes GKE cluster"
     echo "  down                          -- destroys GKE cluster"
 }
 
@@ -57,7 +61,11 @@ down() {
     credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-key"
     set -e
   }
-  gcloud container clusters delete "$CLUSTER_NAME" --region "$CLUSTER_ZONE" --quiet
+  gcloud container clusters delete "$(_cluster_name)" --region "$CLUSTER_ZONE" --quiet
+}
+
+describe() {
+  gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE"
 }
 
 up() {
@@ -88,7 +96,7 @@ up() {
     credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
   }
 
-  gcloud container clusters describe "$CLUSTER_NAME" --region "$CLUSTER_ZONE" 2>&1 > /dev/null || {
+  gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE" 2>&1 > /dev/null || {
     echo "Creating GKE cluster..."
     additional_flags=
     [[ "${cfcontainers:-}" == "1" ]] && {
@@ -100,7 +108,7 @@ up() {
       additional_flags="${additional_flags} --no-enable-autorepair" # not supported for UBUNTU
       additional_flags="${additional_flags} --no-enable-autoupgrade" # not supported for UBUNTU
     }
-    gcloud container clusters create "$CLUSTER_NAME" \
+    gcloud container clusters create "$(_cluster_name)" \
       --region="$CLUSTER_ZONE" \
       --cluster-version="${CLUSTER_VERSION}" \
       --machine-type="${MACHINE_TYPE}" \
@@ -120,7 +128,7 @@ up() {
 
     [[ "${cfcontainers:-}" == "1" ]] && {
       echo "- Update nodes to support cgroup swap accounting..."
-      instance_names=$(gcloud compute instances list --filter=name~$CLUSTER_NAME --format json | jq --raw-output '.[].name')
+      instance_names=$(gcloud compute instances list --filter="name~$(_cluster_name)" --format json | jq --raw-output '.[].name')
       echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg"
       # Update grub
       echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
@@ -131,12 +139,12 @@ up() {
     [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
       echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
       credhub set -n "${CREDHUB_BASE_PATH}/gke-project-name"   -t value -v "$PROJECT_NAME"
-      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$CLUSTER_NAME"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$(_cluster_name)"
       credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"   -t value -v "$CLUSTER_ZONE"
       credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-region" -t value -v "$CLUSTER_REGION"
     }
   }
-  gcloud container clusters get-credentials "$CLUSTER_NAME" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
+  gcloud container clusters get-credentials "$(_cluster_name)" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
 
   [[ "${helm:-}" == "1" ]] && {
     echo "Install/upgrade Tiller Server for Helm"
@@ -379,6 +387,11 @@ case "${1:-usage}" in
     done
 
     up
+    ;;
+
+  describe)
+    shift
+    describe
     ;;
 
   down)
