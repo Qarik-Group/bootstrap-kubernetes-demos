@@ -11,6 +11,10 @@ set -eu
 : "${CF_SYSTEM_DOMAIN:=scf.suse.dev}"
 : "${CF_NAMESPACE:=scf}"
 
+# currently this combo works; others are not working. See respective issues.
+export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
+export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
+
 # helm-manager can put its state into this project, not its own
 export HELM_MGR_STATE_ROOT=state/helm
 
@@ -207,7 +211,6 @@ up() {
     )
     cf_operator_helm_tgz=$(ls vendor/cf-operator/helm/cf-operator*tgz)
     # hardcoded at moment for current vendor/cf-operator submodule version
-    CFOPERATOR_TAG=v0.4.1-60.g642832d0
     # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
     echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
     echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
