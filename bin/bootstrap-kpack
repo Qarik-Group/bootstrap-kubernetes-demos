@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install kpack v${kpack_version}"
+  kubectl apply -f "$kpack_release_url"
+  echo "Installing resources from resources/kpack/*.yaml"
+  ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac

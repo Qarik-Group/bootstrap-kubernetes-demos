@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
+  [[ "${scf_release_url:-X}" == "X" ]] && {
+    scf_release_file=${SCF_RELEASE_FILE:-$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1 | awk '{print $4}')}
+    scf_release_date=$(aws s3 ls s3://scf-v3/ | grep "$scf_release_file" | awk '{print $1}')
+    echo "--> Using ${scf_release_file}${scf_release_date:+ from ${scf_release_date}}"
+    scf_release_url="https://scf-v3.s3.amazonaws.com/${scf_release_file}"
+  }
+  helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
+    scf \
+    "$scf_release_url" \
+    --set "system_domain=${CF_SYSTEM_DOMAIN}" \
+    --set "features.eirini=true"
+
+  echo "Upgrade buildpacks"
+  kubectl apply -n scf -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-update-forever.yaml
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac

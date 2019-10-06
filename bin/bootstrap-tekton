@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install tekton"
+  kubectl apply --filename https://storage.googleapis.com/tekton-releases/latest/release.yaml
+  echo "Installing resources from resources/tekton/*.yaml"
+  ls resources/tekton/*.yaml | xargs -L1 kubectl apply -f
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac

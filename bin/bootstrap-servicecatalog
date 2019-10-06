@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install/upgrade Service Catalog via Helm"
+  helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
+  helm upgrade --install catalog svc-cat/catalog --namespace catalog --wait
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac

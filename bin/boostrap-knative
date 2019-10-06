@@ -1,0 +1,79 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install/upgrade Knative without monitoring"
+  echo "---> install istio ${knative_istio_version}"
+  kubectl apply --wait=true \
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-crds.yaml"
+  kubectl apply --wait=true \
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-lean.yaml"
+  echo "---> wait for istio pilot to start"
+  kubectl wait -l app=pilot pod --for condition=Ready -n istio-system --timeout 5m
+  # while [[ $(kubectl get pods -n istio-system -l app=pilot -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
+  echo "---> install knative serving/eventing CRDs"
+  # TODO https://github.com/knative/serving/issues/5722
+  kubectl apply --wait=true \
+    --selector knative.dev/crd-install=true \
+    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml" || \
+  kubectl apply --wait=true \
+    --selector knative.dev/crd-install=true \
+    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+
+  echo "---> install knative serving/eventing"
+  kubectl apply --wait=true \
+    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+  echo "---> wait for knative to start"
+  kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
+
+
+  # knctl domain create --default --domain knative.starkandwayne.com
+
+  # echo "Deploy sanity test app to Knative"
+  # set +e
+  # kubectl create ns bootstrap-test
+  # set -e
+  # knctl deploy \
+  #   --namespace bootstrap-test \
+  #   --service hello \
+  #   --image gcr.io/knative-samples/helloworld-go \
+  #   --env TARGET=Bootstrap
+
+  # podStatus=Init
+  # while [[ "${podStatus}" != "Running" ]]; do
+  #   sleep 2
+  #   podStatus=$(kubectl get pods -n bootstrap-test -l serving.knative.dev/configuration=hello -o jsonpath="{.items[0].status.phase}")
+  #   echo "  ${podStatus}"
+  # done
+  # knctl curl -n bootstrap-test -s hello
+
+  [[ "${knative_addr_name:-X}" != "X" ]] && {
+    address=$(gcloud compute addresses describe knative-ingress --region "$CLUSTER_REGION" --format json)
+    ip=$(echo "$address" | jq -r ".address")
+    echo "Mapping Knative Ingress Gateway to $ip..."
+    kubectl patch svc istio-ingressgateway --namespace istio-system --patch \
+      "$(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")"
+
+    echo
+    echo "In a while, test your DNS + ingress with:"
+    echo "  curl -v hello.bootstrap-test.knative.starkandwayne.com"
+    echo
+  }
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac
