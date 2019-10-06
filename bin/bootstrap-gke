@@ -80,15 +80,15 @@ failfast() {
   [[ "$(command -v gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $errors_file; }
   [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH" >> $errors_file; }
 
-  bin/bootstrap-helm failfast "$errors_file"
-  bin/bootstrap-servicecatalog failfast "$errors_file"
-  bin/bootstrap-cf-broker failfast "$errors_file"
-  bin/bootstrap-kpack failfast "$errors_file"
-  bin/bootstrap-cf-operator failfast "$errors_file"
-  bin/bootstrap-scf failfast "$errors_file"
-  bin/bootstrap-tekton failfast "$errors_file"
-  bin/bootstrap-knative failfast "$errors_file"
-  bin/bootstrap-kubeapps failfast "$errors_file"
+  [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm failfast "$errors_file"; }
+  [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog failfast "$errors_file"; }
+  [[ "${cf_broker:-}" == "1" ]] && { bin/bootstrap-cf-broker failfast "$errors_file"; }
+  [[ "${kpack:-}" == "1" ]] && { bin/bootstrap-kpack failfast "$errors_file"; }
+  [[ "${cfoperator:-}" == "1" ]] && { bin/bootstrap-cf-operator failfast "$errors_file"; }
+  [[ "${cfeirini:-}" == "1" ]] && { bin/bootstrap-scf failfast "$errors_file"; }
+  [[ "${tekton:-}" == "1" ]] && { bin/bootstrap-tekton failfast "$errors_file"; }
+  [[ "${knative:-}" == "1" ]] && { bin/bootstrap-knative failfast "$errors_file"; }
+  [[ "${kubeapps:-}" == "1" ]] && { bin/bootstrap-kubeapps failfast "$errors_file"; }
 
   cat "${errors_file}"
   [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }

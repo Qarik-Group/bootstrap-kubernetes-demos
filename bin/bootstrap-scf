@@ -5,7 +5,7 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 failfast() {
-  [[ "${scf:-}" == "1" && "$(command -v aws)X" == "X" ]] && { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket" >> $1; }
+  [[ "$(command -v aws)X" == "X" ]] && { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket" >> $1; }
 }
 
 up() {
