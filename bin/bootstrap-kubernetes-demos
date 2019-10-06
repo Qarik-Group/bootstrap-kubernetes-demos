@@ -20,7 +20,6 @@ usage() {
     echo "     [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo ""
     echo "  down                        -- destroys cluster, if originally bootstrapped"
-    echo "  kwt                         -- runs kwt cli to map HTTP/TCP into cluster"
     echo "  clean                       -- cleans up cached state files"
 }
 

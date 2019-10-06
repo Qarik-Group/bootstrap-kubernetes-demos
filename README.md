@@ -89,7 +89,6 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
      [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker
 
   down                        -- destroys cluster, if originally bootstrapped
-  kwt                         -- runs kwt cli to map HTTP/TCP into cluster
   clean                       -- cleans up cached state files
 ```
 
@@ -133,7 +132,7 @@ brew install k14s/tap/kwt
 Run the helper script to configure and run `kwt net start` proxy services:
 
 ```plain
-bootstrap-kubernetes-demos kwt
+bootstrap-system-scf kwt
 ```
 
 Provide your sudo root password at the prompt.
