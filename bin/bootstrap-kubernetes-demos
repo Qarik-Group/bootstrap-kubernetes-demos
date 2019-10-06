@@ -23,6 +23,12 @@ usage() {
     echo "  clean                       -- cleans up cached state files"
 }
 
+# Ordered list of systems
+# TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
+_systems() {
+  echo "helm kubeapps servicecatalog cf-broker cf-operator scf kpack tekton knative"
+}
+
 failfast() {
   set +e
   errors_file=$(mktemp)
@@ -32,19 +38,14 @@ failfast() {
 
   [[ -f state/infrastructure ]]         && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" failfast "$errors_file"; }
 
-  [[ -f state/systems/helm ]]           && { bin/bootstrap-system-helm failfast "$errors_file"; }
-  [[ -f state/systems/kubeapps ]]       && { bin/bootstrap-system-kubeapps failfast "$errors_file"; }
-  [[ -f state/systems/servicecatalog ]] && { bin/bootstrap-system-servicecatalog failfast "$errors_file"; }
-  [[ -f state/systems/cf-broker ]]      && { bin/bootstrap-system-cf-broker failfast "$errors_file"; }
-  [[ -f state/systems/cf-operator ]]    && { bin/bootstrap-system-cf-operator failfast "$errors_file"; }
-  [[ -f state/systems/scf ]]            && { bin/bootstrap-system-scf failfast "$errors_file"; }
-  [[ -f state/systems/kpack ]]          && { bin/bootstrap-system-kpack failfast "$errors_file"; }
-  [[ -f state/systems/tekton ]]         && { bin/bootstrap-system-tekton failfast "$errors_file"; }
-  [[ -f state/systems/knative ]]        && { bin/bootstrap-system-knative failfast "$errors_file"; }
+  for system in $(_systems); do
+    [[ -f "state/systems/$system" ]] && { "bin/bootstrap-system-$system" failfast "$errors_file"; }
+  done
 
   cat "${errors_file}"
   [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
   set -e
+
 }
 
 up() {
@@ -52,15 +53,9 @@ up() {
 
   [[ -f state/infrastructure ]]         && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
-  [[ -f state/systems/helm ]]           && { bin/bootstrap-system-helm up; }
-  [[ -f state/systems/kubeapps ]]       && { bin/bootstrap-system-kubeapps up; }
-  [[ -f state/systems/servicecatalog ]] && { bin/bootstrap-system-servicecatalog up; }
-  [[ -f state/systems/cf-broker ]]      && { bin/bootstrap-system-cf-broker up; }
-  [[ -f state/systems/cf-operator ]]    && { bin/bootstrap-system-cf-operator up; }
-  [[ -f state/systems/scf ]]            && { bin/bootstrap-system-scf up; }
-  [[ -f state/systems/kpack ]]          && { bin/bootstrap-system-kpack up; }
-  [[ -f state/systems/tekton ]]         && { bin/bootstrap-system-tekton up; }
-  [[ -f state/systems/knative ]]        && { bin/bootstrap-system-knative up; }
+  for system in $(_systems); do
+    [[ -f "state/systems/$system" ]] && { "bin/bootstrap-system-$system" up; }
+  done
 }
 
 down() {
