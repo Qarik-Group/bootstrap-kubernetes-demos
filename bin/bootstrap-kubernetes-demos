@@ -19,6 +19,7 @@ usage() {
     echo "     [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo ""
     echo "  down                        -- destroys cluster, if originally bootstrapped"
+    echo "  clean                       -- cleans up cached state files"
 }
 
 failfast() {
@@ -28,7 +29,7 @@ failfast() {
 
   [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH" >> $errors_file; }
 
-  [[ "${google:-}" == "1" ]] && { bin/bootstrap-google failfast "$errors_file"; }
+  [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" failfast "$errors_file"; }
 
   [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm failfast "$errors_file"; }
   [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog failfast "$errors_file"; }
@@ -53,7 +54,7 @@ up() {
     credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
   }
 
-  [[ -f state/infrastructure ]] && { bin/bootstrap-"$(cat state/infrastructure)" up; }
+  [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
   [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm up; }
   [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog up; }
@@ -67,7 +68,12 @@ up() {
 }
 
 down() {
-  [[ -f state/infrastructure ]] && { bin/bootstrap-"$(cat state/infrastructure)" down; }
+  [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" down; }
+}
+
+clean() {
+  down
+  rm -rf state
 }
 
 case "${1:-usage}" in
@@ -134,9 +140,9 @@ case "${1:-usage}" in
     up
     ;;
 
-  describe)
+  clean)
     shift
-    describe
+    clean
     ;;
 
   failfast)
