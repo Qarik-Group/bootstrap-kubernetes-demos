@@ -9,9 +9,19 @@ export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
 export scf_release_url=${SCF_RELEASE_URL:-}
 # Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
 
+_system_domain() {
+  [[ -f state/configuration/scf-system-domain ]] || {
+    echo "${CF_SYSTEM_DOMAIN:-scf.suse.dev}" > state/configuration/scf-system-domain
+  }
+  cat state/configuration/scf-system-domain
+}
 
-export CF_SYSTEM_DOMAIN="${CF_SYSTEM_DOMAIN:-scf.suse.dev}"
-export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
+_namespace() {
+  [[ -f state/configuration/scf-namespace ]] || {
+    echo "${CF_NAMESPACE:-scf}" > state/configuration/scf-namespace
+  }
+  cat state/configuration/scf-namespace
+}
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
@@ -23,7 +33,7 @@ failfast() {
 
 up() {
   failfast
-  echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
+  echo "Install Cloud Foundry/Eirini (scf) for $(_system_domain)"
   [[ "${scf_release_url:-X}" == "X" ]] && {
     # Use latest from scf-v3 bucket if $SCF_RELEASE_FILE not provided
     scf_release_file=${SCF_RELEASE_FILE:-$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1 | awk '{print $4}')}
@@ -34,10 +44,10 @@ up() {
     echo "--> Using ${scf_release_file}${scf_release_date:+ from ${scf_release_date}}"
     scf_release_url="https://scf-v3.s3.amazonaws.com/${scf_release_file}"
   }
-  helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
+  helm upgrade --install --wait --namespace "$(_namespace)" \
     scf \
     "$scf_release_url" \
-    --set "system_domain=${CF_SYSTEM_DOMAIN}" \
+    --set "system_domain=$(_system_domain)" \
     --set "features.eirini=true"
 
   echo "Upgrade buildpacks"
@@ -47,15 +57,15 @@ up() {
 kwt_routing() {
   [[ "$(command -v kwt)X" != "X" ]] || { echo "ERROR: install 'kwt'"; exit 1; }
 
-  api_ip=$(kubectl get svc -n "${CF_NAMESPACE}" scf-router-0 --template '{{.spec.clusterIP}}')}
+  api_ip=$(kubectl get svc -n "$(_namespace)" scf-router-0 --template '{{.spec.clusterIP}}')}
 
-  echo "Mapping *.${CF_SYSTEM_DOMAIN} to internal IP ${api_ip}..."
+  echo "Mapping *.$(_system_domain) to internal IP ${api_ip}..."
   echo
   echo "Login with:"
-  echo "cf login -a https://api.${CF_SYSTEM_DOMAIN} --skip-ssl-validation -u admin \\"
+  echo "cf login -a https://api.$(_system_domain) --skip-ssl-validation -u admin \\"
   echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"'
   echo
-  sudo -E kwt net start --dns-map "${CF_SYSTEM_DOMAIN}=${api_ip}" --namespace "${CF_NAMESPACE}"
+  sudo -E kwt net start --dns-map "$(_system_domain)=${api_ip}" --namespace "$(_namespace)"
 }
 
 case "${1:-usage}" in
