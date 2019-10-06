@@ -8,6 +8,14 @@ _cluster_name() {
   echo "${CLUSTER_NAME:="$(whoami)-dev"}"
 }
 
+_setup_env() {
+  export PROJECT_NAME="${PROJECT_NAME:-$(gcloud config get-value core/project)}"
+  export CLUSTER_REGION="${CLUSTER_REGION:-$(gcloud config get-value compute/region)}"
+  export CLUSTER_ZONE="${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}"
+  export CLUSTER_VERSION="${CLUSTER_VERSION:-latest}"
+  export MACHINE_TYPE="${MACHINE_TYPE:-n1-standard-2}"
+}
+
 failfast() {
   [[ "$(command -v gcloud)X" == "X" ]] && {
     echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $1
@@ -15,6 +23,7 @@ failfast() {
 }
 
 up() {
+  _setup_env
   gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE" 2>&1 > /dev/null || {
     echo "Creating GKE cluster..."
     additional_flags=
@@ -67,10 +76,12 @@ up() {
 }
 
 describe() {
+  _setup_env
   gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE"
 }
 
 down() {
+  _setup_env
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
     set +e

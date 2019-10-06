@@ -2,12 +2,6 @@
 
 set -eu
 
-export PROJECT_NAME="${PROJECT_NAME:-$(gcloud config get-value core/project)}"
-export CLUSTER_REGION="${CLUSTER_REGION:-$(gcloud config get-value compute/region)}"
-export CLUSTER_ZONE="${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}"
-export CLUSTER_VERSION="${CLUSTER_VERSION:-latest}"
-export MACHINE_TYPE="${MACHINE_TYPE:-n1-standard-2}"
-
 export CF_SYSTEM_DOMAIN="${CF_SYSTEM_DOMAIN:-scf.suse.dev}"
 export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
 
