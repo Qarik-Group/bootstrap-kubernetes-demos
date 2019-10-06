@@ -6,6 +6,7 @@ usage() {
     echo "Bootstrap Kubernetes and/or subsystems for demonstrations:"
     echo "  up"
     echo "     [--gke|--google]       -- bootstrap new GKE cluster"
+    echo "     [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets"
     echo ""
     echo "     [--helm|--tiller]      -- deploys secure Helm"
     echo "     [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini"
@@ -31,15 +32,15 @@ failfast() {
 
   [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" failfast "$errors_file"; }
 
-  [[ "${helm:-}" == "1" ]] && { bin/bootstrap-system-helm failfast "$errors_file"; }
-  [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-system-servicecatalog failfast "$errors_file"; }
-  [[ "${cf_broker:-}" == "1" ]] && { bin/bootstrap-system-cf-broker failfast "$errors_file"; }
-  [[ "${kpack:-}" == "1" ]] && { bin/bootstrap-system-kpack failfast "$errors_file"; }
-  [[ "${cfoperator:-}" == "1" ]] && { bin/bootstrap-system-cf-operator failfast "$errors_file"; }
-  [[ "${cfeirini:-}" == "1" ]] && { bin/bootstrap-system-scf failfast "$errors_file"; }
-  [[ "${tekton:-}" == "1" ]] && { bin/bootstrap-system-tekton failfast "$errors_file"; }
-  [[ "${knative:-}" == "1" ]] && { bin/bootstrap-system-knative failfast "$errors_file"; }
-  [[ "${kubeapps:-}" == "1" ]] && { bin/bootstrap-system-kubeapps failfast "$errors_file"; }
+  [[ -f state/systems/helm ]] && { bin/bootstrap-system-helm failfast "$errors_file"; }
+  [[ -f state/systems/servicecatalog ]] && { bin/bootstrap-system-servicecatalog failfast "$errors_file"; }
+  [[ -f state/systems/cf-broker ]] && { bin/bootstrap-system-cf-broker failfast "$errors_file"; }
+  [[ -f state/systems/kpack ]] && { bin/bootstrap-system-kpack failfast "$errors_file"; }
+  [[ -f state/systems/cf-operator ]] && { bin/bootstrap-system-cf-operator failfast "$errors_file"; }
+  [[ -f state/systems/cf ]] && { bin/bootstrap-system-scf failfast "$errors_file"; }
+  [[ -f state/systems/tekton ]] && { bin/bootstrap-system-tekton failfast "$errors_file"; }
+  [[ -f state/systems/knative ]] && { bin/bootstrap-system-knative failfast "$errors_file"; }
+  [[ -f state/systems/kubeapps ]] && { bin/bootstrap-system-kubeapps failfast "$errors_file"; }
 
   cat "${errors_file}"
   [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
@@ -49,22 +50,17 @@ failfast() {
 up() {
   failfast
 
-  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
-    echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
-    credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
-  }
-
   [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
-  [[ "${helm:-}" == "1" ]] && { bin/bootstrap-system-helm up; }
-  [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-system-servicecatalog up; }
-  [[ "${cf_broker:-}" == "1" ]] && { bin/bootstrap-system-cf-broker up; }
-  [[ "${kpack:-}" == "1" ]] && { bin/boostrap-kpack up; }
-  [[ "${cfoperator:-}" == "1" ]] && { bin/bootsrap-cf-operator up; }
-  [[ "${cfeirini:-}" == "1" ]] && { bin/bootstrap-system-cf up; }
-  [[ "${tekton:-}" == "1" ]] && { bin/bootstrap-system-tekton up; }
-  [[ "${knative:-}" == "1" ]] && { bin/bootstrap-system-knative up; }
-  [[ "${kubeapps:-}" == "1" ]] && { bin/bootstrap-system-kubeapps up; }
+  [[ -f state/systems/helm ]] && { bin/bootstrap-system-helm up; }
+  [[ -f state/systems/servicecatalog ]] && { bin/bootstrap-system-servicecatalog up; }
+  [[ -f state/systems/cf-broker ]] && { bin/bootstrap-system-cf-broker up; }
+  [[ -f state/systems/kpack ]] && { bin/boostrap-system-kpack up; }
+  [[ -f state/systems/cf-operator ]] && { bin/bootsrap-system-cf-operator up; }
+  [[ -f state/systems/cf ]] && { bin/bootstrap-system-cf up; }
+  [[ -f state/systems/tekton ]] && { bin/bootstrap-system-tekton up; }
+  [[ -f state/systems/knative ]] && { bin/bootstrap-system-knative up; }
+  [[ -f state/systems/kubeapps ]] && { bin/bootstrap-system-kubeapps up; }
 }
 
 down() {
@@ -78,60 +74,59 @@ clean() {
 
 case "${1:-usage}" in
   up)
-    mkdir -p state
+    mkdir -p state/systems state/configuration/
     shift
     while [[ $# -gt 0 ]]; do
       case "${1:-}" in
         --gke|--google)
-          export google=1
           echo "google" > state/infrastructure
           ;;
-        --cfcontainers)
-          export cfcontainers=1
-          export helm=1
-          ;;
+        # --cfcontainers)
+        # Is this section really for Diego for SCF?
+        #   echo 1 > state/systems/cfcontainers
+        #   echo 1 > state/systems/helm
+        #   ;;
         --cf|--scf|--eirini)
-          export helm=1
-          export cfoperator=1
-          export cfeirini=1
-          export scf=1
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/cf-operator
+          echo 1 > state/systems/scf
           ;;
         --cf-operator)
-          export helm=1
-          export cfoperator=1
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/cf-operator
           ;;
         --kpack)
-          export kpack=1
+          echo 1 > state/systems/kpack
           ;;
         --tekton)
-          export tekton=1
+          echo 1 > state/systems/tekton
           ;;
         --knative)
-          export knative=1
+          echo 1 > state/systems/knative
           ;;
         --knative-addr-name)
           shift
-          export knative_addr_name=$1
+          echo "$1" > state/configuration/knative-knative_addr_name
           ;;
         --helm|--tiller)
-          export helm=1
+          echo 1 > state/systems/helm
           ;;
         --service-catalog|--sc)
-          export helm=1
-          export servicecatalog=1
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/servicecatalog
           ;;
         --cf-broker)
-          export helm=1
-          export servicecatalog=1
-          export cf_broker=1
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/servicecatalog
+          echo 1 > state/systems/cf-broker
           ;;
         --kubeapps)
-          export helm=1
-          export kubeapps=1
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/kubeapps
           ;;
         --credhub-store)
           shift
-          export CREDHUB_BASE_PATH=$1
+          echo "$1" > state/configuration/credhub-base-path
           ;;
       esac
       shift
@@ -152,15 +147,6 @@ case "${1:-usage}" in
 
   down)
     shift
-    while [[ $# -gt 0 ]]; do
-      case "${1:-}" in
-        --credhub-store)
-          shift
-          export CREDHUB_BASE_PATH=$1
-          ;;
-      esac
-      shift
-    done
     down
     ;;
 
