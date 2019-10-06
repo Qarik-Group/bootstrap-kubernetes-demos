@@ -4,7 +4,12 @@ set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+failfast() {
+  [[ "${scf:-}" == "1" && "$(command -v aws)X" == "X" ]] && { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket" >> $1; }
+}
+
 up() {
+  failfast
   echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
   [[ "${scf_release_url:-X}" == "X" ]] && {
     scf_release_file=${SCF_RELEASE_FILE:-$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1 | awk '{print $4}')}
@@ -23,12 +28,16 @@ up() {
 }
 
 case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
   up)
     shift
     up
     ;;
 
   *)
-    up
     ;;
 esac
