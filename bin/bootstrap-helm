@@ -2,6 +2,12 @@
 
 set -eu
 
+# helm-manager can put its state into this project, not its own
+export HELM_MGR_STATE_ROOT=state/helm
+
+# helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
+export HELM_TLS_VERIFY=true
+
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 failfast() {

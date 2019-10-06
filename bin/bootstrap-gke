@@ -9,9 +9,6 @@ export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
 export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
 export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
 
-# helm-manager can put its state into this project, not its own
-export HELM_MGR_STATE_ROOT=state/helm
-
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=true
 
