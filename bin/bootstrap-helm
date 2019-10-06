@@ -4,6 +4,12 @@ set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+failfast() {
+  [[ "${helm:-}" == "1" && "$(command -v helm-manager)X" == "X" ]] && {
+    echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder" >> $1
+  }
+}
+
 up() {
   echo "Install/upgrade Tiller Server for Helm"
   helm-manager up
@@ -19,12 +25,16 @@ up() {
 }
 
 case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
   up)
     shift
     up
     ;;
 
   *)
-    up
     ;;
 esac

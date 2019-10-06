@@ -4,7 +4,19 @@ set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+failfast() {
+  [[ "${cf_broker:-}" == "1" ]] && {
+    set +eu
+    [[ -z "${CF_API}" ]] && { echo "\$CF_API is required for --cf-broker" >> $1; }
+    [[ -z "${CF_USERNAME}" ]] && { echo "\$CF_USERNAME is required for --cf-broker" >> $1; }
+    [[ -z "${CF_PASSWORD}" ]] && { echo "\$CF_PASSWORD is required for --cf-broker" >> $1; }
+    [[ -z "${CF_ORGANIZATION}" ]] && { echo "\$CF_ORGANIZATION is required for --cf-broker" >> $1; }
+    [[ -z "${CF_SPACE}" ]] && { echo "\$CF_SPACE is required for --cf-broker" >> $1; }
+  }
+}
+
 up() {
+  failfast
   echo "Install/upgrade CF Marketplace Service Broker via Helm"
   helm repo add starkandwayne https://helm.starkandwayne.com
   helm repo update
@@ -29,12 +41,16 @@ up() {
 }
 
 case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
   up)
     shift
     up
     ;;
 
   *)
-    up
     ;;
 esac

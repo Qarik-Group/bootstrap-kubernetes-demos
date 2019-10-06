@@ -72,21 +72,33 @@ describe() {
   gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE"
 }
 
+failfast() {
+  set +e
+  errors_file=$(mktemp)
+  trap "rm -f ${errors_file}" EXIT
+
+  [[ "$(command -v gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $errors_file; }
+  [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH" >> $errors_file; }
+
+  bin/bootstrap-helm failfast "$errors_file"
+  bin/bootstrap-servicecatalog failfast "$errors_file"
+  bin/bootstrap-cf-broker failfast "$errors_file"
+  bin/bootstrap-kpack failfast "$errors_file"
+  bin/bootstrap-cf-operator failfast "$errors_file"
+  bin/bootstrap-scf failfast "$errors_file"
+  bin/bootstrap-tekton failfast "$errors_file"
+  bin/bootstrap-knative failfast "$errors_file"
+  bin/bootstrap-kubeapps failfast "$errors_file"
+
+  cat "${errors_file}"
+  [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
+  set -e
+  exit 0;
+}
+
 up() {
-  errors=
-  [[ "$(command -v gcloud)X" == "X" ]] && { echo "ERROR: missing 'gcloud' CLI from \$PATH"; errors=1; }
-  [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH"; errors=1; }
-  [[ "${helm:-}" == "1" && "$(command -v helm-manager)X" == "X" ]] && { echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder"; errors=1; }
-  [[ "${scf:-}" == "1" && "$(command -v aws)X" == "X" ]] && { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket"; errors=1; }
-  [[ "${cf_broker:-}" == "1" ]] && {
-    : "${CF_API:?required for --cf-broker}"
-    : "${CF_USERNAME:?required for --cf-broker}"
-    : "${CF_PASSWORD:?required for --cf-broker}"
-    : "${CF_ORGANIZATION:?required for --cf-broker}"
-    : "${CF_SPACE:?required for --cf-broker}"
-  }
-  # [[ "${knative:-}" == "1" && "$(which knctl)X" == "X" ]] && { echo "ERROR: missing 'knctl' CLI from \$PATH"; errors=1; }
-  [[ "$errors" == "1" ]] && { exit 1; }
+  failfast
+
 
   [[ "${cf_broker:-}" == "1" ]] && {
     echo "Testing login to Cloud Foundry ${CF_API}..."
@@ -174,6 +186,7 @@ case "${1:-usage}" in
           export helm=1
           export cfoperator=1
           export cfeirini=1
+          export scf=1
           ;;
         --cf-operator)
           export helm=1
@@ -222,6 +235,11 @@ case "${1:-usage}" in
   describe)
     shift
     describe
+    ;;
+
+  failfast)
+    shift
+    failfast
     ;;
 
   down)

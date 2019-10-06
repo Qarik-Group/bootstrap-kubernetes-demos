@@ -17,6 +17,5 @@ case "${1:-usage}" in
     ;;
 
   *)
-    up
     ;;
 esac
