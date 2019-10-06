@@ -20,6 +20,12 @@ failfast() {
   [[ "$(command -v gcloud)X" != "X" ]] || {
     echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $1
   }
+
+  [[ -f state/configuration/credhub-base-path ]] && {
+    CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
+    echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
+    credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
+  }
 }
 
 up() {
@@ -64,7 +70,8 @@ up() {
       echo "$instance_names" | xargs gcloud compute instances reset
     }
 
-    [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+    [[ -f state/configuration/credhub-base-path ]] && {
+      CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
       echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
       credhub set -n "${CREDHUB_BASE_PATH}/gke-project-name"   -t value -v "$PROJECT_NAME"
       credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$(_cluster_name)"

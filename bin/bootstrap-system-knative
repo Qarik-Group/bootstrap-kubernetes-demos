@@ -58,6 +58,7 @@ up() {
   # done
   # knctl curl -n bootstrap-test -s hello
 
+  knative_addr_name=$(cat state/configuration/knative-knative_addr_name)
   [[ "${knative_addr_name:-X}" != "X" ]] && {
     address=$(gcloud compute addresses describe knative-ingress --region "$CLUSTER_REGION" --format json)
     ip=$(echo "$address" | jq -r ".address")
