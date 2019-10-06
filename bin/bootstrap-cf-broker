@@ -2,6 +2,9 @@
 
 set -eu
 
+# helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
+export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
+
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 failfast() {
