@@ -1,0 +1,165 @@
+#!/bin/bash
+
+set -eu
+
+usage() {
+    echo "Bootstrap Kubernetes and/or subsystems for demonstrations:"
+    echo "  up"
+    echo "     [--gke|--google]       -- bootstrap new GKE cluster"
+    echo ""
+    echo "     [--helm|--tiller]      -- deploys secure Helm"
+    echo "     [--cf|--eirini]        -- deploys Cloud Foundry/Eirini"
+    echo "     [--cf-operator]        -- deploys only CF Operator"
+    echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
+    echo "     [--tekton]             -- deploys Tekton CD"
+    echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
+    echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
+    echo "     [--kubeapp]                -- deploys Kubeapps"
+    echo "     [--service-catalog|--sc]   -- deploys Helm/Service Catalog"
+    echo "     [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
+    echo ""
+    echo "  down                        -- destroys cluster, if originally bootstrapped"
+}
+
+failfast() {
+  set +e
+  errors_file=$(mktemp)
+  trap "rm -f ${errors_file}" EXIT
+
+  [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH" >> $errors_file; }
+
+  [[ "${google:-}" == "1" ]] && { bin/bootstrap-google failfast "$errors_file"; }
+
+  [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm failfast "$errors_file"; }
+  [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog failfast "$errors_file"; }
+  [[ "${cf_broker:-}" == "1" ]] && { bin/bootstrap-cf-broker failfast "$errors_file"; }
+  [[ "${kpack:-}" == "1" ]] && { bin/bootstrap-kpack failfast "$errors_file"; }
+  [[ "${cfoperator:-}" == "1" ]] && { bin/bootstrap-cf-operator failfast "$errors_file"; }
+  [[ "${cfeirini:-}" == "1" ]] && { bin/bootstrap-scf failfast "$errors_file"; }
+  [[ "${tekton:-}" == "1" ]] && { bin/bootstrap-tekton failfast "$errors_file"; }
+  [[ "${knative:-}" == "1" ]] && { bin/bootstrap-knative failfast "$errors_file"; }
+  [[ "${kubeapps:-}" == "1" ]] && { bin/bootstrap-kubeapps failfast "$errors_file"; }
+
+  cat "${errors_file}"
+  [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
+  set -e
+}
+
+up() {
+  failfast
+
+  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+    echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
+    credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
+  }
+
+  [[ -f state/infrastructure ]] && { bin/bootstrap-"$(cat state/infrastructure)" up; }
+
+  [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm up; }
+  [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog up; }
+  [[ "${cf_broker:-}" == "1" ]] && { bin/bootstrap-cf-broker up; }
+  [[ "${kpack:-}" == "1" ]] && { bin/boostrap-kpack up; }
+  [[ "${cfoperator:-}" == "1" ]] && { bin/bootsrap-cf-operator up; }
+  [[ "${cfeirini:-}" == "1" ]] && { bin/bootstrap-cf up; }
+  [[ "${tekton:-}" == "1" ]] && { bin/bootstrap-tekton up; }
+  [[ "${knative:-}" == "1" ]] && { bin/bootstrap-knative up; }
+  [[ "${kubeapps:-}" == "1" ]] && { bin/bootstrap-kubeapps up; }
+}
+
+down() {
+  [[ -f state/infrastructure ]] && { bin/bootstrap-"$(cat state/infrastructure)" down; }
+}
+
+case "${1:-usage}" in
+  up)
+    mkdir -p state
+    shift
+    while [[ $# -gt 0 ]]; do
+      case "${1:-}" in
+        --gke|--google)
+          export google=1
+          echo "google" > state/infrastructure
+          ;;
+        --cfcontainers)
+          export cfcontainers=1
+          export helm=1
+          ;;
+        --cf|--eirini)
+          export helm=1
+          export cfoperator=1
+          export cfeirini=1
+          export scf=1
+          ;;
+        --cf-operator)
+          export helm=1
+          export cfoperator=1
+          ;;
+        --kpack)
+          export kpack=1
+          ;;
+        --tekton)
+          export tekton=1
+          ;;
+        --knative)
+          export knative=1
+          ;;
+        --knative-addr-name)
+          shift
+          export knative_addr_name=$1
+          ;;
+        --helm|--tiller)
+          export helm=1
+          ;;
+        --service-catalog|--sc)
+          export helm=1
+          export servicecatalog=1
+          ;;
+        --cf-broker)
+          export helm=1
+          export servicecatalog=1
+          export cf_broker=1
+          ;;
+        --kubeapps)
+          export helm=1
+          export kubeapps=1
+          ;;
+        --credhub-store)
+          shift
+          export CREDHUB_BASE_PATH=$1
+          ;;
+      esac
+      shift
+    done
+
+    up
+    ;;
+
+  describe)
+    shift
+    describe
+    ;;
+
+  failfast)
+    shift
+    failfast
+    ;;
+
+  down)
+    shift
+    while [[ $# -gt 0 ]]; do
+      case "${1:-}" in
+        --credhub-store)
+          shift
+          export CREDHUB_BASE_PATH=$1
+          ;;
+      esac
+      shift
+    done
+    down
+    ;;
+
+  *)
+    usage
+    exit 1
+    ;;
+esac
