@@ -57,7 +57,7 @@ up() {
 kwt_routing() {
   [[ "$(command -v kwt)X" != "X" ]] || { echo "ERROR: install 'kwt'"; exit 1; }
 
-  api_ip=$(kubectl get svc -n "$(_namespace)" scf-router-0 --template '{{.spec.clusterIP}}')}
+  api_ip=$(kubectl get svc -n "$(_namespace)" scf-router-0 --template '{{.spec.clusterIP}}')
 
   echo "Mapping *.$(_system_domain) to internal IP ${api_ip}..."
   echo
