@@ -44,6 +44,20 @@ up() {
   kubectl apply -n scf -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-update-forever.yaml
 }
 
+kwt_routing() {
+  [[ "$(command -v kwt)X" != "X" ]] || { echo "ERROR: install 'kwt'"; exit 1; }
+
+  api_ip=$(kubectl get svc -n "${CF_NAMESPACE}" scf-router-0 --template '{{.spec.clusterIP}}')}
+
+  echo "Mapping *.${CF_SYSTEM_DOMAIN} to internal IP ${api_ip}..."
+  echo
+  echo "Login with:"
+  echo "cf login -a https://api.${CF_SYSTEM_DOMAIN} --skip-ssl-validation -u admin \\"
+  echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"'
+  echo
+  sudo -E kwt net start --dns-map "${CF_SYSTEM_DOMAIN}=${api_ip}" --namespace "${CF_NAMESPACE}"
+}
+
 case "${1:-usage}" in
   failfast)
     shift
@@ -53,6 +67,11 @@ case "${1:-usage}" in
   up)
     shift
     up
+    ;;
+
+  kwt)
+    shift
+    kwt_routing
     ;;
 
   *)
