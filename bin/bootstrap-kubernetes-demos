@@ -26,7 +26,11 @@ usage() {
 # Ordered list of available systems
 # TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
 _available_systems() {
-  echo "helm kubeapps servicecatalog cf-broker cf-operator scf kpack tekton knative"
+  echo "helm
+    kubeapps
+    servicecatalog cf-broker
+    cf-operator scf
+    kpack tekton knative"
 }
 
 # Ordered list of requested systems
