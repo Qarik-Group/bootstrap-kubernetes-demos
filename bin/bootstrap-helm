@@ -11,7 +11,7 @@ export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 failfast() {
-  [[ "$(command -v helm-manager)X" == "X" ]] && {
+  [[ "$(command -v helm-manager)X" != "X" ]] || {
     echo "ERROR: missing 'helm-manager' CLI; fetch git submodules to get vendor/helm-tiller-manager/bin folder" >> $1
   }
 }

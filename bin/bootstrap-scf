@@ -2,18 +2,35 @@
 
 set -eu
 
+# Freezing for S1P conference demos. This currently works; newer versions were not working as well
+export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
+
+# Install latest from CI/S3 bucket by default
+export scf_release_url=${SCF_RELEASE_URL:-}
+# Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
+
+
+export CF_SYSTEM_DOMAIN="${CF_SYSTEM_DOMAIN:-scf.suse.dev}"
+export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
+
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 failfast() {
-  [[ "$(command -v aws)X" == "X" ]] && { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket" >> $1; }
+  # aws cli not current required for all code paths
+  # [[ "$(command -v aws)X" != "X" ]] || { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket" >> $1; }
+  printf ""
 }
 
 up() {
   failfast
   echo "Install Cloud Foundry/Eirini (scf) for ${CF_SYSTEM_DOMAIN}"
   [[ "${scf_release_url:-X}" == "X" ]] && {
+    # Use latest from scf-v3 bucket if $SCF_RELEASE_FILE not provided
     scf_release_file=${SCF_RELEASE_FILE:-$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1 | awk '{print $4}')}
-    scf_release_date=$(aws s3 ls s3://scf-v3/ | grep "$scf_release_file" | awk '{print $1}')
+    # Try to look up its date from s3 bucket, if aws CLI available and configured
+    [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
+      scf_release_date=$(aws s3 ls s3://scf-v3/ | grep "$scf_release_file" | awk '{print $1}')
+    }
     echo "--> Using ${scf_release_file}${scf_release_date:+ from ${scf_release_date}}"
     scf_release_url="https://scf-v3.s3.amazonaws.com/${scf_release_file}"
   }

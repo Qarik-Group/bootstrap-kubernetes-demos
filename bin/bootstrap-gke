@@ -2,13 +2,6 @@
 
 set -eu
 
-export CF_SYSTEM_DOMAIN="${CF_SYSTEM_DOMAIN:-scf.suse.dev}"
-export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
-
-# currently this combo works; others are not working. See respective issues.
-export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
-export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
-
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 
@@ -18,10 +11,6 @@ export kpack_release_url=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/
 export knative_istio_version=${ISTIO_VERSION:-1.3.0}
 # https://github.com/knative/serving/releases
 export knative_version=${KNATIVE_VERSION:-0.9.0}
-
-# Install latest from CI/S3 bucket by default
-export scf_release_url=${SCF_RELEASE_URL:-}
-# Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
 
 usage() {
     echo "Bootstrap GKE and subsystems:"

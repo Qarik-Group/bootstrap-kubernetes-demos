@@ -2,6 +2,12 @@
 
 set -eu
 
+# currently this combo works; others are not working. See respective issues.
+export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
+
+export CF_SYSTEM_DOMAIN="${CF_SYSTEM_DOMAIN:-scf.suse.dev}"
+export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
+
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 up() {
