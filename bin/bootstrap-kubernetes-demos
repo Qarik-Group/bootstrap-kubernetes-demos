@@ -23,10 +23,19 @@ usage() {
     echo "  clean                       -- cleans up cached state files"
 }
 
-# Ordered list of systems
+# Ordered list of available systems
 # TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
-_systems() {
+_available_systems() {
   echo "helm kubeapps servicecatalog cf-broker cf-operator scf kpack tekton knative"
+}
+
+# Ordered list of requested systems
+_requested_systems() {
+  for available in $(_available_systems); do
+    for requested in $(find state/systems/* -print0 | xargs -0 basename); do
+      [[ "$available" == "$requested" ]] && { echo "$requested"; }
+    done
+  done
 }
 
 failfast() {
@@ -38,8 +47,8 @@ failfast() {
 
   [[ -f state/infrastructure ]]         && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" failfast "$errors_file"; }
 
-  for system in $(_systems); do
-    [[ -f "state/systems/$system" ]] && { "bin/bootstrap-system-$system" failfast "$errors_file"; }
+  for system in $(_requested_systems); do
+    "bin/bootstrap-system-$system" failfast "$errors_file"
   done
 
   cat "${errors_file}"
@@ -53,8 +62,8 @@ up() {
 
   [[ -f state/infrastructure ]]         && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
-  for system in $(_systems); do
-    [[ -f "state/systems/$system" ]] && { "bin/bootstrap-system-$system" up; }
+  for system in $(_requested_systems); do
+    "bin/bootstrap-system-$system" up
   done
 }
 
