@@ -34,18 +34,20 @@ export scf_release_url=${SCF_RELEASE_URL:-}
 
 usage() {
     echo "Bootstrap GKE and subsystems:"
-    echo "  up [--helm|--tiller] -- deploys secure Helm"
-    echo "     [--cf|--eirini]   -- deploys Cloud Foundry/Eirini"
-    echo "     [--cf-operator]   -- deploys only CF Operator"
-    echo "     [--kpack]         -- deploys kpack to build images with buildpacks"
-    echo "     [--tekton]        -- deploys Tekton CD"
-    echo "     [--knative]       -- deploys Knative Serving/Eventing/Istio"
+    echo "  up"
+    echo "     [--no-gke|--no-google] -- do not bootstrap GKE cluster; use existing kubernetes cluster"
+    echo "     [--helm|--tiller]      -- deploys secure Helm"
+    echo "     [--cf|--eirini]        -- deploys Cloud Foundry/Eirini"
+    echo "     [--cf-operator]        -- deploys only CF Operator"
+    echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
+    echo "     [--tekton]             -- deploys Tekton CD"
+    echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
     echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
-    echo "     [--kubeapp]               -- deploys Kubeapps"
+    echo "     [--kubeapp]            -- deploys Kubeapps"
     echo "     [--service-catalog|--sc]  -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
-    echo "  describe                      -- describes GKE cluster"
-    echo "  down                          -- destroys GKE cluster"
+    echo "  describe                    -- describes GKE cluster"
+    echo "  down                        -- destroys GKE cluster"
 }
 
 failfast() {
@@ -54,7 +56,8 @@ failfast() {
   trap "rm -f ${errors_file}" EXIT
 
   [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH" >> $errors_file; }
-  bin/bootstrap-google failfast "$errors_file"
+
+  [[ "${google:-}" == "1" ]] && { bin/bootstrap-google failfast "$errors_file"; }
 
   [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm failfast "$errors_file"; }
   [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog failfast "$errors_file"; }
@@ -79,7 +82,7 @@ up() {
     credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
   }
 
-  bin/bootstrap-google up
+  [[ "${google:-}" == "1" ]] && { bin/bootstrap-google up; }
 
   [[ "${helm:-}" == "1" ]] && { bin/bootstrap-helm up; }
   [[ "${servicecatalog:-}" == "1" ]] && { bin/bootstrap-servicecatalog up; }
@@ -93,18 +96,22 @@ up() {
 }
 
 down() {
-  bin/bootstrap-google down
+  [[ "${google:-}" == "1" ]] && { bin/bootstrap-google down; }
 }
 
 describe() {
-  bin/bootstrap-google describe
+  [[ "${google:-}" == "1" ]] && { bin/bootstrap-google describe; }
 }
 
+export google=1
 case "${1:-usage}" in
   up)
     shift
     while [[ $# -gt 0 ]]; do
       case "${1:-}" in
+        --no-gke|--no-google)
+          unset google
+          ;;
         --cfcontainers)
           export cfcontainers=1
           export helm=1
