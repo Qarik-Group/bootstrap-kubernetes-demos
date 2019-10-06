@@ -2,16 +2,6 @@
 
 set -eu
 
-# helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
-export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
-
-export kpack_version=${KPACK_VERSION:-0.0.4}
-export kpack_release_url=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml"}
-# https://github.com/knative/serving/tree/master/third_party
-export knative_istio_version=${ISTIO_VERSION:-1.3.0}
-# https://github.com/knative/serving/releases
-export knative_version=${KNATIVE_VERSION:-0.9.0}
-
 usage() {
     echo "Bootstrap GKE and subsystems:"
     echo "  up"

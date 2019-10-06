@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export kpack_version=${KPACK_VERSION:-0.0.4}
+export kpack_release_url=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml"}
+
 set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
