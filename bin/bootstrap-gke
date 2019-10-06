@@ -93,19 +93,10 @@ failfast() {
   cat "${errors_file}"
   [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
   set -e
-  exit 0;
 }
 
 up() {
   failfast
-
-
-  [[ "${cf_broker:-}" == "1" ]] && {
-    echo "Testing login to Cloud Foundry ${CF_API}..."
-    cf api "${CF_API}"
-    cf auth "${CF_USERNAME}" "${CF_PASSWORD}"
-    cf target -o "${CF_ORGANIZATION}" -s "${CF_SPACE}"
-  }
 
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
