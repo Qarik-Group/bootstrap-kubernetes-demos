@@ -17,7 +17,7 @@ _setup_env() {
 }
 
 failfast() {
-  [[ "$(command -v gcloud)X" == "X" ]] && {
+  [[ "$(command -v gcloud)X" != "X" ]] || {
     echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $1
   }
 }
