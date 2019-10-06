@@ -81,12 +81,6 @@ clean() {
   rm -rf state
 }
 
-kwt_routing() {
-  for system in $(_requested_systems); do
-    "bin/bootstrap-system-$system" kwt
-  done
-}
-
 case "${1:-usage}" in
   up)
     mkdir -p state/systems state/configuration/
@@ -158,11 +152,6 @@ case "${1:-usage}" in
   failfast)
     shift
     failfast
-    ;;
-
-  kwt)
-    shift
-    kwt_routing
     ;;
 
   down)
