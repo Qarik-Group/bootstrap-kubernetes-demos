@@ -1,13 +1,38 @@
-# Bootstrap Kubernetes on Google Cloud (GKE) and other subsystems
+# Bootstrap Kubernetes and demonstrations
+
+It is great to have a single tool to bring up a Kubernetes cluster, and install one or more demonstration/development/experimentation systems.
+
+## Basic Usage
 
 ```plain
-git clone --recurse-submodules https://github.com/starkandwayne/bootstrap-gke.git
-cd bootstrap-gke
+bootstrap-kubernetes-demos up --google --kpack --knative
+bootstrap-kubernetes-demos up --google --scf
+```
+
+Later, to discard the cluster (if it was bootstrap by this tool):
+
+```plain
+bootstrap-kubernetes-demos down
+```
+
+The initial flags are remembered, so you can subsequently `up` again and the same system will be rebuilt or upgraded:
+
+```plain
+bootstrap-kubernetes-demos up
+```
+
+## Installation
+
+```plain
+git clone --recurse-submodules https://github.com/starkandwayne/bootstrap-kubernetes-demos.git
+cd bootstrap-kubernetes-demos
 
 direnv allow
 # or
 export PATH=$PWD/bin:$PWD/vendor/helm-tiller-manager/bin:$PATH
 ```
+
+## Google Cloud
 
 Login to Google Cloud:
 
@@ -25,28 +50,10 @@ gcloud config set compute/zone   australia-southeast1-a
 To deploy a GKE cluster:
 
 ```plain
-bootstrap-gke up
+bootstrap-kubernetes-demos up --google
 ```
 
-But there are many subsystems that can be conveniently deployed after your cluster is setup:
-
-```plain
-$ bootstrap-gke
-Bootstrap GKE and subsystems:
-  up [--helm|--tiller] -- deploys secure Helm
-     [--cf|--eirini]   -- deploys Cloud Foundry/Eirini
-     [--kpack]         -- deploys kpack to build images with buildpacks
-     [--tekton]        -- deploys Tekton CD
-     [--knative]       -- deploys Knative Build/Serving/Istio
-     [--knative-addr-name name] -- map GCP address to ingress gateway
-     [--knative-build] -- deploys nightly Knative Build
-     [--kubeapp]               -- deploys Kubeapps
-     [--service-catalog|--sc]  -- deploys Helm/Service Catalog
-     [--cf-broker]     -- deploys Helm/Service Catalog/Cloud Foundry Service Broker
-  down                          -- destroys GKE cluster
-```
-
-## Configuration
+### Google Cloud Configuration
 
 There are several environment variables that can be set to override defaults:
 
@@ -59,9 +66,34 @@ There are several environment variables that can be set to override defaults:
 : ${MACHINE_TYPE:=n1-standard-2}
 ```
 
-## Helm / Tiller
+## Subsystems
 
-Helm v2 requires a Kubernetes-running component Tiller. The `bootstrap-gke up --helm` command (and others that depend on Helm for installation) will create Tiller for you.
+But there are many subsystems that can be conveniently deployed after your cluster is setup:
+
+```plain
+$ bootstrap-kubernetes-demos
+Bootstrap Kubernetes and/or subsystems for demonstrations:
+  up
+     [--gke|--google]       -- bootstrap new GKE cluster
+
+     [--helm|--tiller]      -- deploys secure Helm
+     [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini
+     [--cf-operator]        -- deploys only CF Operator
+     [--kpack]              -- deploys kpack to build images with buildpacks
+     [--tekton]             -- deploys Tekton CD
+     [--knative]            -- deploys Knative Serving/Eventing/Istio
+     [--knative-addr-name name] -- map GCP address to ingress gateway
+     [--kubeapp]                -- deploys Kubeapps
+     [--service-catalog|--sc]   -- deploys Helm/Service Catalog
+     [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker
+
+  down                        -- destroys cluster, if originally bootstrapped
+  clean                       -- cleans up cached state files
+```
+
+### Helm / Tiller
+
+Helm v2 requires a Kubernetes-running component Tiller. The `bootstrap-kubernetes-demos up --helm` command (and others that depend on Helm for installation) will create Tiller for you.
 
 It will also secure it with generated TLS certificates (stored in `state/` folder, and copied into `~/.helm`).
 
@@ -75,10 +107,10 @@ Put that in your `.profile` for all terminal sessions.
 
 ### Cloud Foundry / Eirini / Quarks
 
-To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag:
+To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--scf`, or `--eirini` flags):
 
 ```plain
-bootstrap-gke up --cf
+bootstrap-kubernetes-demos up --cf
 ```
 
 You can override some defaults by setting the following environment variables before running the command above:
@@ -146,11 +178,3 @@ cf push
 Load the application URL into your browser, accept the risks of "insecure" self-signed certificates, and your application will look like:
 
 ![app](https://cl.ly/9ebcd7a4e4b9/cf-nodejs-app.png)
-
-## Shutdown
-
-To destroy the GKE cluster:
-
-```plain
-bootstrap-gke down
-```
