@@ -232,8 +232,7 @@ up() {
     [[ "${scf_release_url:-X}" == "X" ]] && {
       scf_release_file=${SCF_RELEASE_FILE:-$(aws s3 ls s3://scf-v3/ | sort -nr | head -n1 | awk '{print $4}')}
       scf_release_date=$(aws s3 ls s3://scf-v3/ | grep "$scf_release_file" | awk '{print $1}')
-      [[ "${scf_release_date:-X}" == "X" ]] && { echo "ERROR: cannot find SCF_RELEASE_FILE=${scf_release_file}"; exit 1; }
-      echo "--> Using ${scf_release_file} from ${scf_release_date}"
+      echo "--> Using ${scf_release_file}${scf_release_date:+ from ${scf_release_date}}"
       scf_release_url="https://scf-v3.s3.amazonaws.com/${scf_release_file}"
     }
     helm upgrade --install --wait --namespace ${CF_NAMESPACE} \
