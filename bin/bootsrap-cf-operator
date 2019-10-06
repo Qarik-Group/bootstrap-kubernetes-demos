@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install Cloud Foundry/Quarks (cf-operator)"
+  [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
+    git submodules update --init
+  }
+  (
+    cd vendor/cf-operator
+    rm -f helm/*tgz
+    bin/build-helm
+  )
+  cf_operator_helm_tgz=$(ls vendor/cf-operator/helm/cf-operator*tgz)
+  # hardcoded at moment for current vendor/cf-operator submodule version
+  # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
+  echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
+  echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
+  helm upgrade --install --wait --namespace "${CF_NAMESPACE}" \
+    cf-operator \
+    "${cf_operator_helm_tgz}" \
+    ${CFOPERATOR_TAG:+--set "image.tag=${CFOPERATOR_TAG}"} \
+    --set "provider=gke" \
+    --set "operator-webhook-use-service-reference=true" # coming
+
+  # echo "--> Testing cf-operator with example nats deployment"
+  # kubectl apply -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+  # sleep 5 # TODO: wait for boshdeployment state change
+  # kubectl get pods -n "$CF_NAMESPACE"
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac

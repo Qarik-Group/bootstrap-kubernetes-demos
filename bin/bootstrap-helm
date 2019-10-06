@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install/upgrade Tiller Server for Helm"
+  helm-manager up
+  helm repo update
+  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+    echo "Storing helm into credhub ${CREDHUB_BASE_PATH}..."
+    [[ -f $(helm home)/ca.pem ]] && {
+      credhub set -n "${CREDHUB_BASE_PATH}/helm-ca" -t value -v "$(cat "$(helm home)/ca.pem")"
+      credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-cert" -t value -v "$(cat "$(helm home)/cert.pem")"
+      credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-key" -t value -v "$(cat "$(helm home)/key.pem")"
+    }
+  }
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    up
+    ;;
+esac
