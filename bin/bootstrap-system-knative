@@ -74,14 +74,20 @@ up() {
 }
 
 kwt_routing() {
-  namespace=$1
-  sudo -E kwt net start --dns-map "${namespace}.example.com=$(kubectl get svc istio-ingressgateway --namespace istio-system -o 'jsonpath={.status.loadBalancer.ingress[0].ip}')}" --namespace "${namespace}"
+  namespace=${1:-default}
+  set -x
+  sudo -E kwt net start --dns-map "${namespace}.example.com=$(kubectl get svc istio-ingressgateway --namespace istio-system -o 'jsonpath={.status.loadBalancer.ingress[0].ip}')" --namespace "${namespace}"
 }
 
 case "${1:-usage}" in
   up)
     shift
     up
+    ;;
+
+  kwt)
+    shift
+    kwt_routing "$@"
     ;;
 
   *)
