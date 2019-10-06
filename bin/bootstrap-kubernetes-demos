@@ -30,17 +30,17 @@ failfast() {
 
   [[ "$(command -v kubectl)X" == "X" ]] && { echo "ERROR: missing 'kubectl' CLI from \$PATH" >> $errors_file; }
 
-  [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" failfast "$errors_file"; }
+  [[ -f state/infrastructure ]]         && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" failfast "$errors_file"; }
 
-  [[ -f state/systems/helm ]] && { bin/bootstrap-system-helm failfast "$errors_file"; }
+  [[ -f state/systems/helm ]]           && { bin/bootstrap-system-helm failfast "$errors_file"; }
+  [[ -f state/systems/kubeapps ]]       && { bin/bootstrap-system-kubeapps failfast "$errors_file"; }
   [[ -f state/systems/servicecatalog ]] && { bin/bootstrap-system-servicecatalog failfast "$errors_file"; }
-  [[ -f state/systems/cf-broker ]] && { bin/bootstrap-system-cf-broker failfast "$errors_file"; }
-  [[ -f state/systems/kpack ]] && { bin/bootstrap-system-kpack failfast "$errors_file"; }
-  [[ -f state/systems/cf-operator ]] && { bin/bootstrap-system-cf-operator failfast "$errors_file"; }
-  [[ -f state/systems/cf ]] && { bin/bootstrap-system-scf failfast "$errors_file"; }
-  [[ -f state/systems/tekton ]] && { bin/bootstrap-system-tekton failfast "$errors_file"; }
-  [[ -f state/systems/knative ]] && { bin/bootstrap-system-knative failfast "$errors_file"; }
-  [[ -f state/systems/kubeapps ]] && { bin/bootstrap-system-kubeapps failfast "$errors_file"; }
+  [[ -f state/systems/cf-broker ]]      && { bin/bootstrap-system-cf-broker failfast "$errors_file"; }
+  [[ -f state/systems/cf-operator ]]    && { bin/bootstrap-system-cf-operator failfast "$errors_file"; }
+  [[ -f state/systems/scf ]]            && { bin/bootstrap-system-scf failfast "$errors_file"; }
+  [[ -f state/systems/kpack ]]          && { bin/bootstrap-system-kpack failfast "$errors_file"; }
+  [[ -f state/systems/tekton ]]         && { bin/bootstrap-system-tekton failfast "$errors_file"; }
+  [[ -f state/systems/knative ]]        && { bin/bootstrap-system-knative failfast "$errors_file"; }
 
   cat "${errors_file}"
   [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
@@ -50,17 +50,17 @@ failfast() {
 up() {
   failfast
 
-  [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
+  [[ -f state/infrastructure ]]         && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
-  [[ -f state/systems/helm ]] && { bin/bootstrap-system-helm up; }
+  [[ -f state/systems/helm ]]           && { bin/bootstrap-system-helm up; }
+  [[ -f state/systems/kubeapps ]]       && { bin/bootstrap-system-kubeapps up; }
   [[ -f state/systems/servicecatalog ]] && { bin/bootstrap-system-servicecatalog up; }
-  [[ -f state/systems/cf-broker ]] && { bin/bootstrap-system-cf-broker up; }
-  [[ -f state/systems/kpack ]] && { bin/boostrap-system-kpack up; }
-  [[ -f state/systems/cf-operator ]] && { bin/bootsrap-system-cf-operator up; }
-  [[ -f state/systems/cf ]] && { bin/bootstrap-system-cf up; }
-  [[ -f state/systems/tekton ]] && { bin/bootstrap-system-tekton up; }
-  [[ -f state/systems/knative ]] && { bin/bootstrap-system-knative up; }
-  [[ -f state/systems/kubeapps ]] && { bin/bootstrap-system-kubeapps up; }
+  [[ -f state/systems/cf-broker ]]      && { bin/bootstrap-system-cf-broker up; }
+  [[ -f state/systems/cf-operator ]]    && { bin/bootstrap-system-cf-operator up; }
+  [[ -f state/systems/scf ]]            && { bin/bootstrap-system-scf up; }
+  [[ -f state/systems/kpack ]]          && { bin/bootstrap-system-kpack up; }
+  [[ -f state/systems/tekton ]]         && { bin/bootstrap-system-tekton up; }
+  [[ -f state/systems/knative ]]        && { bin/bootstrap-system-knative up; }
 }
 
 down() {
