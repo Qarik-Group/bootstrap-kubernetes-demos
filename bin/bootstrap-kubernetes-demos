@@ -20,6 +20,7 @@ usage() {
     echo "     [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
     echo ""
     echo "  down                        -- destroys cluster, if originally bootstrapped"
+    echo "  kwt                         -- runs kwt cli to map HTTP/TCP into cluster"
     echo "  clean                       -- cleans up cached state files"
 }
 
@@ -78,6 +79,12 @@ down() {
 clean() {
   down
   rm -rf state
+}
+
+kwt_routing() {
+  for system in $(_requested_systems); do
+    "bin/bootstrap-system-$system" kwt
+  done
 }
 
 case "${1:-usage}" in
@@ -151,6 +158,11 @@ case "${1:-usage}" in
   failfast)
     shift
     failfast
+    ;;
+
+  kwt)
+    shift
+    kwt_routing
     ;;
 
   down)

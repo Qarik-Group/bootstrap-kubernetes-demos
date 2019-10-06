@@ -75,6 +75,7 @@ $ bootstrap-kubernetes-demos
 Bootstrap Kubernetes and/or subsystems for demonstrations:
   up
      [--gke|--google]       -- bootstrap new GKE cluster
+     [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets
 
      [--helm|--tiller]      -- deploys secure Helm
      [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini
@@ -88,6 +89,7 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
      [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker
 
   down                        -- destroys cluster, if originally bootstrapped
+  kwt                         -- runs kwt cli to map HTTP/TCP into cluster
   clean                       -- cleans up cached state files
 ```
 
@@ -131,7 +133,7 @@ brew install k14s/tap/kwt
 Run the helper script to configure and run `kwt net start` proxy services:
 
 ```plain
-./resources/eirini/kwt.sh
+bootstrap-kubernetes-demos kwt
 ```
 
 Provide your sudo root password at the prompt.
