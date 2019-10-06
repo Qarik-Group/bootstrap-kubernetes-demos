@@ -5,13 +5,17 @@ set -eu
 # currently this combo works; others are not working. See respective issues.
 export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
 
-export CF_SYSTEM_DOMAIN="${CF_SYSTEM_DOMAIN:-scf.suse.dev}"
-export CF_NAMESPACE="${CF_NAMESPACE:-scf}"
-
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+_namespace() {
+  [[ -f state/configuration/scf-namespace ]] || {
+    echo "${CF_NAMESPACE:-scf}" > state/configuration/scf-namespace
+  }
+  cat state/configuration/scf-namespace
+}
 
 failfast() {
   [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
@@ -32,7 +36,7 @@ up() {
   # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
   echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
   echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
-  helm upgrade --install --wait --namespace "${CF_NAMESPACE}" \
+  helm upgrade --install --wait --namespace "$(_namespace)" \
     cf-operator \
     "${cf_operator_helm_tgz}" \
     ${CFOPERATOR_TAG:+--set "image.tag=${CFOPERATOR_TAG}"} \
@@ -40,9 +44,9 @@ up() {
     --set "operator-webhook-use-service-reference=true" # coming
 
   # echo "--> Testing cf-operator with example nats deployment"
-  # kubectl apply -n "$CF_NAMESPACE" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+  # kubectl apply -n "$(_namespace)" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
   # sleep 5 # TODO: wait for boshdeployment state change
-  # kubectl get pods -n "$CF_NAMESPACE"
+  # kubectl get pods -n "$(_namespace)"
 }
 
 case "${1:-usage}" in

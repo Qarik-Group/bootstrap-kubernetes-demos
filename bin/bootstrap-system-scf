@@ -9,6 +9,8 @@ export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
 export scf_release_url=${SCF_RELEASE_URL:-}
 # Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
 
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
 _system_domain() {
   [[ -f state/configuration/scf-system-domain ]] || {
     echo "${CF_SYSTEM_DOMAIN:-scf.suse.dev}" > state/configuration/scf-system-domain
@@ -22,8 +24,6 @@ _namespace() {
   }
   cat state/configuration/scf-namespace
 }
-
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 failfast() {
   # aws cli not current required for all code paths
