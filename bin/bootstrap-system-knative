@@ -58,19 +58,24 @@ up() {
   # done
   # knctl curl -n bootstrap-test -s hello
 
-  knative_addr_name=$(cat state/configuration/knative-knative_addr_name)
-  [[ "${knative_addr_name:-X}" != "X" ]] && {
-    address=$(gcloud compute addresses describe knative-ingress --region "$CLUSTER_REGION" --format json)
-    ip=$(echo "$address" | jq -r ".address")
-    echo "Mapping Knative Ingress Gateway to $ip..."
-    kubectl patch svc istio-ingressgateway --namespace istio-system --patch \
-      "$(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")"
+  # [[ -f state/configuration/knative-knative_addr_name ]] && {
+  #   knative_addr_name=$(cat state/configuration/knative-knative_addr_name)
+  #   address=$(gcloud compute addresses describe knative-ingress --region "$CLUSTER_REGION" --format json)
+  #   ip=$(echo "$address" | jq -r ".address")
+  #   echo "Mapping Knative Ingress Gateway to $ip..."
+  #   kubectl patch svc istio-ingressgateway --namespace istio-system --patch \
+  #     "$(echo "$address" | jq -cr "{spec: {loadBalancerIP: .address}}")"
 
-    echo
-    echo "In a while, test your DNS + ingress with:"
-    echo "  curl -v hello.bootstrap-test.knative.starkandwayne.com"
-    echo
-  }
+  #   echo
+  #   echo "In a while, test your DNS + ingress with:"
+  #   echo "  curl -v hello.bootstrap-test.knative.starkandwayne.com"
+  #   echo
+  # }
+}
+
+kwt_routing() {
+  namespace=$1
+  sudo -E kwt net start --dns-map "${namespace}.example.com=$(kubectl get svc istio-ingressgateway --namespace istio-system -o 'jsonpath={.status.loadBalancer.ingress[0].ip}')}" --namespace "${namespace}"
 }
 
 case "${1:-usage}" in

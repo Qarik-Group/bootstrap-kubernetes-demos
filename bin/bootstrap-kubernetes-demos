@@ -14,7 +14,7 @@ usage() {
     echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]             -- deploys Tekton CD"
     echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
-    echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
+    # echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--kubeapp]                -- deploys Kubeapps"
     echo "     [--service-catalog|--sc]   -- deploys Helm/Service Catalog"
     echo "     [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker"
@@ -119,10 +119,10 @@ case "${1:-usage}" in
         --knative)
           echo 1 > state/systems/knative
           ;;
-        --knative-addr-name)
-          shift
-          echo "$1" > state/configuration/knative-knative_addr_name
-          ;;
+        # --knative-addr-name)
+        #   shift
+        #   echo "$1" > state/configuration/knative-knative_addr_name
+        #   ;;
         --helm|--tiller)
           echo 1 > state/systems/helm
           ;;
