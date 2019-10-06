@@ -29,6 +29,7 @@ up() {
       credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-key" -t value -v "$(cat "$(helm home)/key.pem")"
     }
   }
+  exit 0
 }
 
 case "${1:-usage}" in
