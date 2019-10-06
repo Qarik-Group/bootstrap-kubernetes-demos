@@ -13,11 +13,15 @@ export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+failfast() {
+  [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
+    >&2 echo "Fetching missing submodules..."
+    git submodule update --init
+  }
+}
+
 up() {
   echo "Install Cloud Foundry/Quarks (cf-operator)"
-  [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
-    git submodules update --init
-  }
   (
     cd vendor/cf-operator
     rm -f helm/*tgz
@@ -42,6 +46,11 @@ up() {
 }
 
 case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
   up)
     shift
     up
