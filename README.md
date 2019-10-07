@@ -168,7 +168,7 @@ Next, upgrade all the installed buildpacks:
 curl https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/update-only.sh | bash
 ```
 
-Find sample applications at https://github.com/cloudfoundry-samples.
+Find sample applications at [github.com/cloudfoundry-samples](https://github.com/cloudfoundry-samples).
 
 ```plain
 git clone https://github.com/cloudfoundry-samples/cf-sample-app-nodejs
