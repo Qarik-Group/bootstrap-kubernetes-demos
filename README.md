@@ -121,7 +121,9 @@ You can override some defaults by setting the following environment variables be
 : ${CF_NAMESPACE:=scf}
 ```
 
-Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. But fear not. You can run `kwt net start` to proxy any requests to CF or to applications running on CF from your local machine.
+Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. Nor will it ever set up your public DNS to map to your Cloud Foundry ingress/router.
+
+But fear not. You can run `kwt net start` to proxy any requests to CF or to applications running on CF from your local machine.
 
 The [`kwt`](https://github.com/k14s/kwt) CLI can be installed to MacOS with Homebrew:
 
@@ -222,4 +224,85 @@ smtp      shared   Shared service for smtp   email
 
 $ cf create-service smtp shared email
 $ cf delete-service smtp shared email
+```
+
+## Knative
+
+```plain
+bootstrap-kubernetes-demos up --knative
+```
+
+This will install a small Istio (no mTLS between containers), Knative Serving, and Knative Eventing. Knative Build has been deprecated and is no longer considered to be part of Knative.
+
+### Deploy First App
+
+You can create Knative Services (Applications) using:
+
+* core team CLI [`kn`](https://github.com/knative/client/)
+* community CLI [`knctl`](https://github.com/cppforlife/knctl)
+* Create resources of `services.serving.knative.dev` CRD (`ksvc` alias)
+
+```plain
+kubectl create ns test-app
+kn service create \
+    sample-app-nodejs \
+    --image starkandwayne/sample-app-nodejs:latest \
+    --namespace test-app
+```
+
+This creates a `ksvc`:
+
+```plain
+kubectl get ksvc -n test-app
+NAME                URL                                             LATESTCREATED               LATESTREADY                 READY   REASON
+sample-app-nodejs   http://sample-app-nodejs.test-app.example.com   sample-app-nodejs-jrskg-1   sample-app-nodejs-jrskg-1   True
+```
+
+To see all the resources created, run:
+
+```plain
+kubectl get ksvc,rev,rt,cfg -n test-app
+```
+
+But how do we access the URL above?
+
+### Access / Ingress with kwt
+
+This Knative deployment does setup a public ingress via Istio, but it does not setup public DNS to map to your ingress IP. Additionally, the URL `http://sample-app-nodejs.test-app.example.com` is not a publicly valid DNS entry (`example.com`).
+
+But fear not. You can run `kwt net start` to proxy any requests to Knative applications (called Knative Services) in a given namespace.
+
+The [`kwt`](https://github.com/k14s/kwt) CLI can be installed to MacOS with Homebrew:
+
+```plain
+brew install k14s/tap/kwt
+```
+
+Run the helper script to configure and run `kwt net start` proxy services:
+
+```plain
+bootstrap-system-knative kwt test-app
+bootstrap-system-knative kwt default
+```
+
+The first argument to `bootstrap-system-knative kwt` is the namespace when you are deploying your Knative apps.
+
+Provide your sudo root password at the prompt.
+
+The `kwt net start` command launches a new pod `kwt-net` in the `scf` namespace, which is used to proxy your traffic into the cluster.
+
+The `kwt` proxy is ready when the output looks similar to:
+
+```plain
+...
+07:17:27AM: info: KubeEntryPoint: Waiting for networking pod 'kwt-net' in namespace 'scf' to start...
+...
+07:17:47AM: info: ForwardingProxy: Ready!
+```
+
+We can now access the `.test-app.example.com` application URLs:
+
+```plain
+$ curl http://sample-app-nodejs.test-app.example.com
+Hello World!
 ```
