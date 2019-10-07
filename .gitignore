@@ -1,3 +1,5 @@
 tmp
 state
 *serviceaccount*yaml
+bin/kn
+bin/helm
