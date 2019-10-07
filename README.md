@@ -179,3 +179,47 @@ cf push
 Load the application URL into your browser, accept the risks of "insecure" self-signed certificates, and your application will look like:
 
 ![app](https://cl.ly/9ebcd7a4e4b9/cf-nodejs-app.png)
+
+#### Install a Service Broker
+
+Let's install the [World's Simplest Service Broker](https://github.com/cloudfoundry-community/worlds-simplest-service-broker) via Helm, and register it as a service broker in our new Cloud Foundry.
+
+```plain
+helm repo add starkandwayne https://helm.starkandwayne.com
+helm repo update
+
+helm upgrade --install email starkandwayne/worlds-simplest-service-broker \
+    --namespace brokers \
+    --wait \
+    --set "serviceBroker.class=smtp" \
+    --set "serviceBroker.plan=shared" \
+    --set "serviceBroker.tags=shared\,email\,smtp" \
+    --set "serviceBroker.baseGUID=some-guid" \
+    --set "serviceBroker.credentials=\{\"host\":\"mail.authsmtp.com\"\,\"port\":2525\,\"username\":\"ac123456\"\,\"password\":\"special-secret\"\}"
+```
+
+When this finishes you can now register it with your Cloud Foundry:
+
+```plain
+cf create-service-broker email \
+    broker broker \
+    http://email-worlds-simplest-service-broker.brokers.svc.cluster.local:3000
+
+cf enable-service-access smtp
+```
+
+Note: this URL assumes you installed your broker in to the `--namespace brokers` namespace above.
+
+The `smtp` service is now available to all users:
+
+```plain
+$ cf marketplace
+Getting services from marketplace in org system / space dev as admin...
+OK
+
+service   plans    description               broker
+smtp      shared   Shared service for smtp   email
+
+$ cf create-service smtp shared email
+$ cf delete-service smtp shared email
+```
