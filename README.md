@@ -92,7 +92,7 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
   clean                       -- cleans up cached state files
 ```
 
-### Helm / Tiller
+## Helm / Tiller
 
 Helm v2 requires a Kubernetes-running component Tiller. The `bootstrap-kubernetes-demos up --helm` command (and others that depend on Helm for installation) will create Tiller for you.
 
@@ -106,7 +106,7 @@ export HELM_TLS_VERIFY=true
 
 Put that in your `.profile` for all terminal sessions.
 
-### Cloud Foundry / Eirini / Quarks
+## Cloud Foundry / Eirini / Quarks
 
 To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--scf`, or `--eirini` flags):
 
@@ -180,7 +180,7 @@ Load the application URL into your browser, accept the risks of "insecure" self-
 
 ![app](https://cl.ly/9ebcd7a4e4b9/cf-nodejs-app.png)
 
-#### Install a Service Broker
+### Install a Service Broker
 
 Let's install the [World's Simplest Service Broker](https://github.com/cloudfoundry-community/worlds-simplest-service-broker) via Helm, and register it as a service broker in our new Cloud Foundry.
 
