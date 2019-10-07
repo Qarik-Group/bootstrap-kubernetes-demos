@@ -65,8 +65,10 @@ kwt_routing() {
   echo "cf login -a https://api.$(_system_domain) --skip-ssl-validation -u admin \\"
   echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"'
   echo
+  system_domain=$(_system_domain)
+  namespace=$(_namespace)
   set -x
-  sudo -E kwt net start --dns-map "$(_system_domain)=${api_ip}" --namespace "$(_namespace)"
+  sudo -E kwt net start --dns-map "${system_domain}=${api_ip}" --namespace "$namespace"
 }
 
 case "${1:-usage}" in
