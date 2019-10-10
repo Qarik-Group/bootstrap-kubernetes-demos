@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# https://github.com/knative/serving/tree/master/third_party
-export knative_istio_version=${ISTIO_VERSION:-1.3.2}
-# https://github.com/knative/serving/releases
-export knative_version=${KNATIVE_VERSION:-0.9.0}
-
 set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 up() {
+  # https://github.com/knative/serving/tree/master/third_party
+  export knative_istio_version=$(curl -sSL https://raw.githubusercontent.com/knative/serving/master/third_party/istio-1.3-latest)
+  # https://github.com/knative/serving/releases
+  export knative_version=${KNATIVE_VERSION:-0.9.0}
+
   echo "Install/upgrade Knative without monitoring"
-  echo "---> install istio ${knative_istio_version}"
+  echo "---> install ${knative_istio_version}"
   kubectl apply --wait=true \
-    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-crds.yaml"
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${knative_istio_version}/istio-crds.yaml"
   kubectl apply --wait=true \
-    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-lean.yaml"
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${knative_istio_version}/istio-lean.yaml"
   echo "---> wait for istio pilot to start"
   kubectl wait -l app=pilot pod --for condition=Ready -n istio-system --timeout 5m
   # while [[ $(kubectl get pods -n istio-system -l app=pilot -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
