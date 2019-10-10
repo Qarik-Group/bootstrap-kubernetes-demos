@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # https://github.com/knative/serving/tree/master/third_party
-export knative_istio_version=${ISTIO_VERSION:-1.3.1}
+export knative_istio_version=${ISTIO_VERSION:-1.3.2}
 # https://github.com/knative/serving/releases
 export knative_version=${KNATIVE_VERSION:-0.9.0}
 
