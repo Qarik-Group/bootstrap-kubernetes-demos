@@ -1,0 +1,134 @@
+#!/bin/bash
+
+#TODO 
+# https://github.com/SUSE/scf/wiki/How-to-Install-SCF#requirements-for-kubernetes
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+_cluster_name() {
+  echo "${CLUSTER_NAME:="$(whoami)-dev"}"
+}
+
+_setup_env() {
+  export PROJECT_NAME="${PROJECT_NAME:-$(gcloud config get-value core/project)}"
+  export CLUSTER_REGION="${CLUSTER_REGION:-$(gcloud config get-value compute/region)}"
+  export CLUSTER_ZONE="${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}"
+  export CLUSTER_VERSION="${CLUSTER_VERSION:-latest}"
+  export MACHINE_TYPE="${MACHINE_TYPE:-n1-standard-2}"
+}
+
+failfast() {
+  [[ "$(command -v gcloud)X" != "X" ]] || {
+    echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $1
+  }
+
+  [[ -f state/configuration/credhub-base-path ]] && {
+    CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
+    echo "Testing access to Credhub ${CREDHUB_BASE_PATH}..."
+    credhub find -n "${CREDHUB_BASE_PATH}" > /dev/null
+  }
+}
+
+up() {
+  _setup_env
+  gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE" 2>&1 > /dev/null || {
+    echo "Creating GKE cluster..."
+    additional_flags=
+    [[ "${cfcontainers:-}" == "1" ]] && {
+      echo "- Using UBUNTU image-type for cf-containers/eirini requirements"
+      # https://github.com/SUSE/scf/wiki/Deployment-on-Google-GKE
+      additional_flags="${additional_flags} --image-type UBUNTU"
+      # TODO -  additional_flags="${additional_flags} --addons=HttpLoadBalancing"
+      # see https://cloud.google.com/sdk/gcloud/reference/container/clusters/create
+      additional_flags="${additional_flags} --no-enable-autorepair" # not supported for UBUNTU
+      additional_flags="${additional_flags} --no-enable-autoupgrade" # not supported for UBUNTU
+    }
+    gcloud container clusters create "$(_cluster_name)" \
+      --region="$CLUSTER_ZONE" \
+      --cluster-version="${CLUSTER_VERSION}" \
+      --machine-type="${MACHINE_TYPE}" \
+      --enable-autoscaling --min-nodes=1 --max-nodes=5 \
+      --enable-autorepair \
+      --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
+      --num-nodes=3 \
+      --no-enable-basic-auth \
+      --no-issue-client-certificate \
+      --enable-ip-alias \
+      --metadata disable-legacy-endpoints=true \
+      ${additional_flags}
+
+    kubectl create clusterrolebinding cluster-admin-binding \
+      --clusterrole=cluster-admin \
+      --user="$(gcloud config get-value core/account)"
+
+    [[ "${cfcontainers:-}" == "1" ]] && {
+      echo "- Update nodes to support cgroup swap accounting..."
+      instance_names=$(gcloud compute instances list --filter="name~$(_cluster_name)" --format json | jq --raw-output '.[].name')
+      echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg"
+      # Update grub
+      echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
+      # Restart VMs
+      echo "$instance_names" | xargs gcloud compute instances reset
+    }
+
+    [[ -f state/configuration/credhub-base-path ]] && {
+      CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
+      echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-project-name"   -t value -v "$PROJECT_NAME"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$(_cluster_name)"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"   -t value -v "$CLUSTER_ZONE"
+      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-region" -t value -v "$CLUSTER_REGION"
+    }
+  }
+  gcloud container clusters get-credentials "$(_cluster_name)" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
+}
+
+describe() {
+  _setup_env
+  gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE"
+}
+
+down() {
+  _setup_env
+  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
+    echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
+    set +e
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-project-name"
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-cluster-name"
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"
+    credhub delete -n "${CREDHUB_BASE_PATH}/gke-cluster-region"
+    credhub delete -n "${CREDHUB_BASE_PATH}/helm-ca"
+    credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-cert"
+    credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-key"
+    set -e
+  }
+  gcloud container clusters delete "$(_cluster_name)" --region "$CLUSTER_ZONE" --quiet
+}
+
+
+case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
+  up)
+    shift
+    up
+    ;;
+
+  describe)
+    shift
+    describe
+    ;;
+
+  down)
+    shift
+    down
+    ;;
+
+  *)
+    ;;
+esac
