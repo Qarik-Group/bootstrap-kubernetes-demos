@@ -242,6 +242,8 @@ You can create Knative Services (Applications) using:
 * community CLI [`knctl`](https://github.com/cppforlife/knctl)
 * Create resources of `services.serving.knative.dev` CRD (`ksvc` alias)
 
+The latest `kn` CLI will be automatically downloaded for you and is used in the examples below.
+
 ```plain
 kubectl create ns test-app
 kn service create \
