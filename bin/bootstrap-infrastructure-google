@@ -19,6 +19,7 @@ _setup_env() {
 failfast() {
   [[ "$(command -v gcloud)X" != "X" ]] || {
     echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $1
+    echo "---> Please install Google Cloud SDK from https://cloud.google.com/sdk/" >> $1
   }
 
   [[ -f state/configuration/credhub-base-path ]] && {
