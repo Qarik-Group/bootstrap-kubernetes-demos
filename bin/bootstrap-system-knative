@@ -2,7 +2,31 @@
 
 set -eu
 
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+root_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+cd "$root_path"
+
+platform() {
+    if [ "$(uname)" == "Darwin" ]; then
+        echo "darwin"
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        echo "linux"
+    fi
+}
+
+_kn_download() {
+    local url="https://storage.googleapis.com/knative-nightly/client/latest/kn-$(platform)-amd64"
+    local cli=kn
+
+    [[ -f bin/$cli ]] || {
+      echo "---> installing $cli cli into bin/"
+      (
+      cd $(mktemp -d)
+      curl -L >$cli "${url}"
+      chmod +x $cli
+      mv $cli "$root_path/bin/$cli"
+      )
+    }
+}
 
 up() {
   # https://github.com/knative/serving/tree/master/third_party
@@ -16,8 +40,12 @@ up() {
     --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${knative_istio_version}/istio-crds.yaml"
   kubectl apply --wait=true \
     --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${knative_istio_version}/istio-lean.yaml"
+
+  _kn_download
+
   echo "---> wait for istio pilot to start"
   kubectl wait -l app=pilot pod --for condition=Ready -n istio-system --timeout 5m
+
   # while [[ $(kubectl get pods -n istio-system -l app=pilot -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
   echo "---> install knative serving/eventing CRDs"
   # TODO https://github.com/knative/serving/issues/5722
@@ -34,6 +62,7 @@ up() {
   kubectl apply --wait=true \
     --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
     --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+
   echo "---> wait for knative to start"
   kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
 
