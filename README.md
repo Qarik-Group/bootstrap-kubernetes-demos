@@ -308,3 +308,44 @@ We can now access the `.test-app.example.com` application URLs:
 $ curl http://sample-app-nodejs.test-app.example.com
 Hello World!
 ```
+
+## Rancher Rio
+
+```plain
+bootstrap-kubernetes-demos up --rio
+```
+
+The `rio` system will download the latest `rio` CLI into `bin/rio`, and will `rio install` into your Kubernetes cluster.
+
+To run the example `rio run` into `default` namespace and view locally with `kwt`:
+
+```plain
+rio run https://github.com/rancher/rio-demo
+```
+
+Now run `kwt net start` for the `default` namespace in another terminal:
+
+```plain
+sudo -E kwt net start --namespace default
+```
+
+To view the `rio-demo` URL:
+
+```plain
+$ kwt net svc
+Services in namespace 'default'
+
+Name                  Internal DNS                                    Cluster IP   Ports
+bold-wright0          bold-wright0.default.svc.cluster.local          10.0.11.198  80/tcp
+bold-wright0-metrics  bold-wright0-metrics.default.svc.cluster.local  10.0.8.94    9090/tcp
+bold-wright0-priv     bold-wright0-priv.default.svc.cluster.local     10.0.6.255   80/tcp
+bold-wright0-v0       bold-wright0-v0.default.svc.cluster.local       10.0.12.163  80/tcp
+kubernetes            kubernetes.default.svc.cluster.local            10.0.0.1     443/tcp
+```
+
+When the rio app is ready:
+
+```plain
+$ curl bold-wright0.default.svc.cluster.local
+Hi there, I'm running in Rio
+```
