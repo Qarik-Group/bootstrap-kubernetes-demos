@@ -51,7 +51,12 @@ up() {
     --set "features.eirini=true"
 
   echo "Upgrade buildpacks"
-  kubectl apply -n scf -f https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/k8s-update-forever.yaml
+  helm repo add starkandwayne https://helm.starkandwayne.com
+  helm repo update
+
+  helm upgrade --install --namespace  "$(_namespace)" \
+    update-all-cf-buildpacks \
+    starkandwayne/update-all-cf-buildpacks
 }
 
 kwt_routing() {
