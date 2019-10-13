@@ -43,10 +43,24 @@ up() {
     --set "provider=gke" \
     --set "operator-webhook-use-service-reference=true" # coming
 
-  # echo "--> Testing cf-operator with example nats deployment"
-  # kubectl apply -n "$(_namespace)" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
-  # sleep 5 # TODO: wait for boshdeployment state change
-  # kubectl get pods -n "$(_namespace)"
+sanitytest() {
+  echo "--> Testing cf-operator with example nats deployment"
+  kubectl apply -n "$(_namespace)" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+  sleep 5 # TODO: wait for boshdeployment state change
+  kubectl get pods -n "$(_namespace)"
+}
+
+restart() {
+  kubectl delete validatingwebhookconfigurations -l name=cf-operator-webhook
+  kubectl delete mutatingwebhookconfigurations -l name=cf-operator-webhook
+  kubectl delete pod -l name=cf-operator -n "$(_namespace)"
+}
+
+down() {
+  helm delete cf-operator --purge
+
+  kubectl delete validatingwebhookconfigurations -l name=cf-operator-webhook
+  kubectl delete mutatingwebhookconfigurations -l name=cf-operator-webhook
 }
 
 case "${1:-usage}" in
@@ -58,6 +72,16 @@ case "${1:-usage}" in
   up)
     shift
     up
+    ;;
+
+  restart)
+    shift
+    restart
+    ;;
+
+  down)
+    shift
+    down
     ;;
 
   *)
