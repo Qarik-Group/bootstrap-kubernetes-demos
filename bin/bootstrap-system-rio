@@ -9,7 +9,7 @@ up() {
   export INSTALL_RIO_BIN_DIR=$PWD/bin
   curl -sfL https://raw.githubusercontent.com/drnic/rio/my-installer/install.sh | sh -
 
-  rio install
+  rio install --http-port 80 --https-port 443
 }
 
 case "${1:-usage}" in
