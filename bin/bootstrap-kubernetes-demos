@@ -5,7 +5,7 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 mkdir -p state/systems
-touch state/systems/ignoreme
+touch state/systems/zzz-ignoreme
 
 usage() {
     echo "Bootstrap Kubernetes and/or subsystems for demonstrations:"
