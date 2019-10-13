@@ -315,6 +315,30 @@ Hello World!
 bootstrap-kubernetes-demos up --rio
 ```
 
+The output might look similar to:
+
+```plain
+[INFO]  Finding latest release
+[INFO]  Using v0.5.0 as release
+[INFO]  Downloading hash https://github.com/rancher/rio/releases/download/v0.5.0/sha256sum-amd64.txt
+[INFO]  Downloading binary https://github.com/rancher/rio/releases/download/v0.5.0/rio-darwin-amd64
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   607    0   607    0     0    701      0 --:--:-- --:--:-- --:--:--   700
+100 72.0M  100 72.0M    0     0   454k      0  0:02:42  0:02:42 --:--:-- 1488k
+[INFO]  Verifying binary download
+[INFO]  Installing rio to /Users/drnic/Projects/kubernetes/bootstrap-kubernetes-demos/bin/rio
+Deploying Rio control plane....
+rio controller version v0.5.0 (303f3652) installed into namespace rio-system
+Detecting if clusterDomain is accessible...
+ClusterDomain is reachable. Run `rio info` to get more info.
+Controller logs are available from `rio systemlogs`
+
+Welcome to Rio!
+
+Run `rio run https://github.com/rancher/rio-demo` as an example
+```
+
 The `rio` system will download the latest `rio` CLI into `bin/rio`, and will `rio install` into your Kubernetes cluster.
 
 To run the example `rio run` into `default` namespace and view locally with `kwt`:
