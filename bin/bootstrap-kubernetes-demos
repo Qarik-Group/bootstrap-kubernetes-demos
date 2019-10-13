@@ -75,8 +75,13 @@ up() {
 
   [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
+  [[ -z "$(_requested_systems)" ]] && { echo "No systems selected."; }
   for system in $(_requested_systems); do
-    "bin/bootstrap-system-$system" up
+    if [[ -z "${DRY_RUN:-}" ]]; then
+      "bin/bootstrap-system-$system" up
+    else
+      echo "---> bootstrap-system-$system up"
+    fi
   done
 }
 
