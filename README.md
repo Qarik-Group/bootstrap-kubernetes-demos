@@ -311,6 +311,10 @@ Hello World!
 
 ## Rancher Rio
 
+[Rancher](https://rancher.com/)'s [Rio](https://rio.io/) is:
+
+> The MicroPaaS for Kubernetes: Build, test, deploy, scale, and version stateless apps in any Kubernetes cluster.
+
 ```plain
 bootstrap-kubernetes-demos up --rio
 ```
