@@ -18,10 +18,7 @@ _namespace() {
 }
 
 failfast() {
-  [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
-    >&2 echo "Fetching missing submodules..."
-    git submodule update --init
-  }
+  printf ""
 }
 
 build_from_src() {
