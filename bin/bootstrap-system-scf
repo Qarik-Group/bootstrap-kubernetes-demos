@@ -3,7 +3,7 @@
 set -eu
 
 # Freezing for S1P conference demos. This currently works; newer versions were not working as well
-export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-8f7a71d1.tgz}
+export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-2f83620.tgz}
 
 # Install latest from CI/S3 bucket by default
 export scf_release_url=${SCF_RELEASE_URL:-}
