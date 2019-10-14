@@ -2,8 +2,8 @@
 
 set -eu
 
-# currently this combo works; others are not working. See respective issues.
-export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
+export CF_OPERATOR_VERSION=${CF_OPERATOR_VERSION:-"cf-operator-v0.4.2+0.g604925f0.tgz"}
+export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/release/helm-charts/${CF_OPERATOR_VERSION}"}
 
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
@@ -24,24 +24,35 @@ failfast() {
   }
 }
 
-up() {
-  echo "Install Cloud Foundry/Quarks (cf-operator)"
+build_from_src() {
   (
     cd vendor/cf-operator
     rm -f helm/*tgz
     bin/build-helm
   )
-  cf_operator_helm_tgz=$(ls vendor/cf-operator/helm/cf-operator*tgz)
+  ls vendor/cf-operator/helm/cf-operator*tgz
+}
+
+up() {
+  echo "Install Cloud Foundry/Quarks (cf-operator)"
   # hardcoded at moment for current vendor/cf-operator submodule version
   # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
-  echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
-  echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
+  echo "--> Using ${CF_OPERATOR_HELM_TGZ}"
+  [[ -n "${CFOPERATOR_TAG:-}" ]] && {
+    echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
+    echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
+  }
+
+  # cf-operator versions have + in them; let's encode that as %2B
+  CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ//'+'/%2B}
+
   helm upgrade --install --wait --namespace "$(_namespace)" \
     cf-operator \
-    "${cf_operator_helm_tgz}" \
+    "${CF_OPERATOR_HELM_TGZ}" \
     ${CFOPERATOR_TAG:+--set "image.tag=${CFOPERATOR_TAG}"} \
     --set "provider=gke" \
     --set "operator-webhook-use-service-reference=true" # coming
+}
 
 sanitytest() {
   echo "--> Testing cf-operator with example nats deployment"
@@ -51,9 +62,9 @@ sanitytest() {
 }
 
 restart() {
-  kubectl delete validatingwebhookconfigurations -l name=cf-operator-webhook
-  kubectl delete mutatingwebhookconfigurations -l name=cf-operator-webhook
-  kubectl delete pod -l name=cf-operator -n "$(_namespace)"
+  kubectl delete validatingwebhookconfigurations cf-operator-hook-"$(_namespace)" --ignore-not-found
+  kubectl delete mutatingwebhookconfigurations cf-operator-hook-"$(_namespace)" --ignore-not-found
+  kubectl delete pod -l name=cf-operator -n "$(_namespace)" --ignore-not-found
 }
 
 down() {
