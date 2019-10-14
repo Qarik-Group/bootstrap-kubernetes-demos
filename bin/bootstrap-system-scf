@@ -44,7 +44,7 @@ up() {
     echo "--> Using ${scf_release_file}${scf_release_date:+ from ${scf_release_date}}"
     scf_release_url="https://scf-v3.s3.amazonaws.com/${scf_release_file}"
   }
-  helm upgrade --install --wait --namespace "$(_namespace)" \
+  helm upgrade --install --namespace "$(_namespace)" \
     scf \
     "$scf_release_url" \
     --set "system_domain=$(_system_domain)" \
