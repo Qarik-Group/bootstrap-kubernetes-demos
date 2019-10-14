@@ -7,7 +7,7 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 _cluster_name() {
   [[ -f state/google/cluster-name ]] || {
     mkdir -p state/google
-    ${CLUSTER_NAME:="$(whoami)-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6 ; echo)"}
+    ${CLUSTER_NAME:="$(whoami)-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)"}
     echo "$CLUSTER_NAME" > state/google/cluster-name
   }
   cat state/google/cluster-name
