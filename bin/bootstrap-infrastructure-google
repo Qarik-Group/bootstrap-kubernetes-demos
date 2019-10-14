@@ -112,6 +112,7 @@ describe() {
 }
 
 down() {
+  [[ -f state/google/cluster-name ]] || { echo "No record of provisioned cluster."; exit 1; }
   _setup_env
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
