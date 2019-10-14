@@ -2,7 +2,7 @@
 
 set -eu
 
-export CF_OPERATOR_VERSION=${CF_OPERATOR_VERSION:-"cf-operator-v0.4.2+0.g604925f0.tgz"}
+export CF_OPERATOR_VERSION=${CF_OPERATOR_VERSION:-"cf-operator-v0.4.0+1.g3d277af0.tgz"}
 export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/release/helm-charts/${CF_OPERATOR_VERSION}"}
 
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
