@@ -121,6 +121,10 @@ You can override some defaults by setting the following environment variables be
 : ${CF_NAMESPACE:=scf}
 ```
 
+Your Cloud Foundry Buildpacks will be automatically updated to the latest from GitHub, and each day a cronjob will run to update them again.
+
+### Access to SCF
+
 Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. Nor will it ever set up your public DNS to map to your Cloud Foundry ingress/router.
 
 But fear not. You can run `kwt net start` to proxy any requests to CF or to applications running on CF from your local machine.
@@ -150,6 +154,8 @@ The `kwt` proxy is ready when the output looks similar to:
 07:17:47AM: info: ForwardingProxy: Ready!
 ```
 
+### Deploy first app
+
 In another terminal you can now `cf login` and `cf push` apps:
 
 ```plain
@@ -162,12 +168,6 @@ You can now create organizations, spaces, and deploy applications:
 ```plain
 cf create-space dev
 cf target -s dev
-```
-
-Next, upgrade all the installed buildpacks:
-
-```plain
-curl https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/update-only.sh | bash
 ```
 
 Find sample applications at [github.com/cloudfoundry-samples](https://github.com/cloudfoundry-samples).
@@ -224,6 +224,18 @@ smtp      shared   Shared service for smtp   email
 
 $ cf create-service smtp shared email
 $ cf delete-service smtp shared email
+```
+
+### Restart cf-operator
+
+The `cf-operator` (from the Quarks project) is like a BOSH director for Kubernetes.
+
+If you need/want to update it then you need to both delete some system webhooks and delete the pod (see discussion in [issue #436](https://github.com/cloudfoundry-incubator/cf-operator/issues/436)).
+
+There is a `restart` helper you can run to do this:
+
+```plain
+bootstrap-system-cf-operator restart
 ```
 
 ## Knative
