@@ -1,6 +1,3 @@
 [submodule "vendor/helm-tiller-manager"]
 	path = vendor/helm-tiller-manager
 	url = https://github.com/starkandwayne/helm-tiller-manager
-[submodule "vendor/cf-operator"]
-	path = vendor/cf-operator
-	url = https://github.com/cloudfoundry-incubator/cf-operator/
