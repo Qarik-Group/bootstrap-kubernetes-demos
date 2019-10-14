@@ -4,10 +4,11 @@ set -eu
 
 # Freezing for S1P conference demos. This currently works; newer versions were not working as well
 export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-scf-3.0.0-2f83620.tgz}
+# Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
 
 # Install latest from CI/S3 bucket by default
+# Usage: SCF_RELEASE_URL=path/to/scf/bazel-bin/deploy/helm/scf/scf-3.0.0.tgz
 export scf_release_url=${SCF_RELEASE_URL:-}
-# Also can use SCF_RELEASE_FILE=scf-3.0.0-8f7a71d1.tgz for file from bucket
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
