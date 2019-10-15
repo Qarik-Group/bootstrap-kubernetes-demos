@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -vx
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
@@ -52,7 +52,7 @@ up() {
   domain=$(_system_domain)
   (
     set -x
-    helm upgrade --install --namespace "$ns" \
+    helm upgrade  --install --debug --namespace "$ns" \
       scf \
       "$SCF_RELEASE_URL" \
       --set "system_domain=$domain" \
@@ -65,7 +65,7 @@ up() {
 
   (
     set -x
-    helm upgrade --install --namespace  "$(_namespace)" \
+    helm upgrade --install --debug --namespace  "$(_namespace)" \
       update-all-cf-buildpacks \
       starkandwayne/update-all-cf-buildpacks
   )
