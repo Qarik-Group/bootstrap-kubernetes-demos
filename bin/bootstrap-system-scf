@@ -43,24 +43,32 @@ up() {
   [[ "${SCF_RELEASE_URL:-X}" == "X" ]] && {
     # Try to look up its date from s3 bucket, if aws CLI available and configured
     [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
-      scf_release_date=$(aws s3 ls s3://scf-v3/ | grep "$SCF_RELEASE_FILE" | awk '{print $1}')
+      release_date=$(aws s3 ls s3://scf-v3/ | grep "$SCF_RELEASE_FILE" | awk '{print $1}')
     }
-    echo "--> Using ${SCF_RELEASE_FILE}${scf_release_date:+ from ${scf_release_date}}"
+    echo "--> Using ${SCF_RELEASE_FILE}${release_date:+ from ${release_date}}"
     SCF_RELEASE_URL="https://scf-v3.s3.amazonaws.com/${SCF_RELEASE_FILE}"
   }
-  helm upgrade --install --namespace "$(_namespace)" \
-    scf \
-    "$SCF_RELEASE_URL" \
-    --set "system_domain=$(_system_domain)" \
-    --set "features.eirini=true"
+  ns=$(_namespace)
+  domain=$(_system_domain)
+  (
+    set -x
+    helm upgrade --install --namespace "$ns" \
+      scf \
+      "$SCF_RELEASE_URL" \
+      --set "system_domain=$domain" \
+      --set "features.eirini=true"
+  )
 
   echo "Upgrade buildpacks"
   helm repo add starkandwayne https://helm.starkandwayne.com
   helm repo update
 
-  helm upgrade --install --namespace  "$(_namespace)" \
-    update-all-cf-buildpacks \
-    starkandwayne/update-all-cf-buildpacks
+  (
+    set -x
+    helm upgrade --install --namespace  "$(_namespace)" \
+      update-all-cf-buildpacks \
+      starkandwayne/update-all-cf-buildpacks
+  )
 }
 
 kwt_routing() {
