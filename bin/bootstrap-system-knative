@@ -50,19 +50,27 @@ up() {
 
   echo "Install/upgrade Knative without monitoring"
   echo "---> install ${KNATIVE_ISTIO_VERSION}"
+  (
+  set -x
   kubectl apply --wait=true \
     --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${KNATIVE_ISTIO_VERSION}/istio-crds.yaml"
   kubectl apply --wait=true \
     --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${KNATIVE_ISTIO_VERSION}/istio-lean.yaml"
+  )
 
   _kn_download
 
   echo "---> wait for istio pilot to start"
+  (
+  set -x
   kubectl wait -l app=pilot pod --for condition=Ready -n istio-system --timeout 5m
+  )
 
   # while [[ $(kubectl get pods -n istio-system -l app=pilot -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
   echo "---> install knative serving/eventing CRDs"
   # TODO https://github.com/knative/serving/issues/5722
+  (
+  set -x
   kubectl apply --wait=true \
     --selector knative.dev/crd-install=true \
     --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
@@ -71,14 +79,20 @@ up() {
     --selector knative.dev/crd-install=true \
     --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
     --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml"
-
+  )
   echo "---> install knative serving/eventing"
+  (
+  set -x
   kubectl apply --wait=true \
     --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
     --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml"
+  )
 
   echo "---> wait for knative to start"
+  (
+  set -x
   kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
+  )
 
 
   # knctl domain create --default --domain knative.starkandwayne.com
