@@ -65,7 +65,7 @@ up() {
       --no-enable-basic-auth \
       --no-issue-client-certificate \
       --enable-ip-alias \
-      --metadata disable-legacy-endpoints=true \
+      #--metadata disable-legacy-endpoints=true \ removed this flag, that cluster could be created
       ${additional_flags}
   }
 
