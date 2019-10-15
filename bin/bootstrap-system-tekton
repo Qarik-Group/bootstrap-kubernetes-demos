@@ -5,7 +5,7 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 up() {
-  echo "Install tekton"
+  echo "Install latest tekton"
   kubectl apply --filename https://storage.googleapis.com/tekton-releases/latest/release.yaml
   echo "Installing resources from resources/tekton/*.yaml"
   ls resources/tekton/*.yaml | xargs -L1 kubectl apply -f
