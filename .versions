@@ -2,3 +2,4 @@ scf-helm-file=scf-3.0.0-8f7a71d1.tgz
 cf-operator-helm-file=cf-operator-v0.4.0+1.g3d277af0.tgz
 knative-serving=0.9.0
 knative-istio-major=1.3
+kpack=0.0.4
