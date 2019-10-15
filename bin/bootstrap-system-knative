@@ -13,6 +13,23 @@ platform() {
     fi
 }
 
+_default_istio_version() {
+  grep "knative-istio-major" .versions | cut -d= -f2
+}
+
+_default_knative_version() {
+  grep "knative-serving" .versions | cut -d= -f2
+}
+
+discover_versions() {
+  # https://github.com/knative/serving/tree/master/third_party
+  KNATIVE_ISTIO_MAJOR_VERSION=${KNATIVE_ISTIO_MAJOR_VERSION:-$(_default_istio_version)}
+  export KNATIVE_ISTIO_VERSION=${KNATIVE_ISTIO_VERSION:-$(curl -sSL https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${KNATIVE_ISTIO_MAJOR_VERSION}-latest)}
+
+  # https://github.com/knative/serving/releases
+  export KNATIVE_VERSION=${KNATIVE_VERSION:-$(_default_knative_version)}
+}
+
 _kn_download() {
     local url="https://storage.googleapis.com/knative-nightly/client/latest/kn-$(platform)-amd64"
     local cli=kn
@@ -29,17 +46,14 @@ _kn_download() {
 }
 
 up() {
-  # https://github.com/knative/serving/tree/master/third_party
-  export knative_istio_version=$(curl -sSL https://raw.githubusercontent.com/knative/serving/master/third_party/istio-1.3-latest)
-  # https://github.com/knative/serving/releases
-  export knative_version=${KNATIVE_VERSION:-0.9.0}
+  discover_versions
 
   echo "Install/upgrade Knative without monitoring"
-  echo "---> install ${knative_istio_version}"
+  echo "---> install ${KNATIVE_ISTIO_VERSION}"
   kubectl apply --wait=true \
-    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${knative_istio_version}/istio-crds.yaml"
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${KNATIVE_ISTIO_VERSION}/istio-crds.yaml"
   kubectl apply --wait=true \
-    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${knative_istio_version}/istio-lean.yaml"
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${KNATIVE_ISTIO_VERSION}/istio-lean.yaml"
 
   _kn_download
 
@@ -51,17 +65,17 @@ up() {
   # TODO https://github.com/knative/serving/issues/5722
   kubectl apply --wait=true \
     --selector knative.dev/crd-install=true \
-    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
-    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml" || \
+    --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml" || \
   kubectl apply --wait=true \
     --selector knative.dev/crd-install=true \
-    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
-    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+    --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml"
 
   echo "---> install knative serving/eventing"
   kubectl apply --wait=true \
-    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
-    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+    --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml"
 
   echo "---> wait for knative to start"
   kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
