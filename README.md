@@ -121,6 +121,10 @@ You can override some defaults by setting the following environment variables be
 : ${CF_NAMESPACE:=scf}
 ```
 
+Your Cloud Foundry Buildpacks will be automatically updated to the latest from GitHub, and each day a cronjob will run to update them again.
+
+### Access to SCF
+
 Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. Nor will it ever set up your public DNS to map to your Cloud Foundry ingress/router.
 
 But fear not. You can run `kwt net start` to proxy any requests to CF or to applications running on CF from your local machine.
@@ -150,6 +154,8 @@ The `kwt` proxy is ready when the output looks similar to:
 07:17:47AM: info: ForwardingProxy: Ready!
 ```
 
+### Deploy first app
+
 In another terminal you can now `cf login` and `cf push` apps:
 
 ```plain
@@ -162,12 +168,6 @@ You can now create organizations, spaces, and deploy applications:
 ```plain
 cf create-space dev
 cf target -s dev
-```
-
-Next, upgrade all the installed buildpacks:
-
-```plain
-curl https://raw.githubusercontent.com/starkandwayne/update-all-cf-buildpacks/master/update-only.sh | bash
 ```
 
 Find sample applications at [github.com/cloudfoundry-samples](https://github.com/cloudfoundry-samples).
@@ -226,6 +226,18 @@ $ cf create-service smtp shared email
 $ cf delete-service smtp shared email
 ```
 
+### Restart cf-operator
+
+The `cf-operator` (from the Quarks project) is like a BOSH director for Kubernetes.
+
+If you need/want to update it then you need to both delete some system webhooks and delete the pod (see discussion in [issue #436](https://github.com/cloudfoundry-incubator/cf-operator/issues/436)).
+
+There is a `restart` helper you can run to do this:
+
+```plain
+bootstrap-system-cf-operator restart
+```
+
 ## Knative
 
 ```plain
@@ -241,6 +253,8 @@ You can create Knative Services (Applications) using:
 * core team CLI [`kn`](https://github.com/knative/client/)
 * community CLI [`knctl`](https://github.com/cppforlife/knctl)
 * Create resources of `services.serving.knative.dev` CRD (`ksvc` alias)
+
+The latest `kn` CLI will be automatically downloaded for you and is used in the examples below.
 
 ```plain
 kubectl create ns test-app
@@ -305,4 +319,73 @@ We can now access the `.test-app.example.com` application URLs:
 ```plain
 $ curl http://sample-app-nodejs.test-app.example.com
 Hello World!
+```
+
+## Rancher Rio
+
+[Rancher](https://rancher.com/)'s [Rio](https://rio.io/) is:
+
+> The MicroPaaS for Kubernetes: Build, test, deploy, scale, and version stateless apps in any Kubernetes cluster.
+
+```plain
+bootstrap-kubernetes-demos up --rio
+```
+
+The output might look similar to:
+
+```plain
+[INFO]  Finding latest release
+[INFO]  Using v0.5.0 as release
+[INFO]  Downloading hash https://github.com/rancher/rio/releases/download/v0.5.0/sha256sum-amd64.txt
+[INFO]  Downloading binary https://github.com/rancher/rio/releases/download/v0.5.0/rio-darwin-amd64
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   607    0   607    0     0    701      0 --:--:-- --:--:-- --:--:--   700
+100 72.0M  100 72.0M    0     0   454k      0  0:02:42  0:02:42 --:--:-- 1488k
+[INFO]  Verifying binary download
+[INFO]  Installing rio to /Users/drnic/Projects/kubernetes/bootstrap-kubernetes-demos/bin/rio
+Deploying Rio control plane....
+rio controller version v0.5.0 (303f3652) installed into namespace rio-system
+Detecting if clusterDomain is accessible...
+ClusterDomain is reachable. Run `rio info` to get more info.
+Controller logs are available from `rio systemlogs`
+
+Welcome to Rio!
+
+Run `rio run https://github.com/rancher/rio-demo` as an example
+```
+
+The `rio` system will download the latest `rio` CLI into `bin/rio`, and will `rio install` into your Kubernetes cluster.
+
+To run the example `rio run` into `default` namespace and view locally with `kwt`:
+
+```plain
+rio run https://github.com/rancher/rio-demo
+```
+
+Now run `kwt net start` for the `default` namespace in another terminal:
+
+```plain
+sudo -E kwt net start --namespace default
+```
+
+To view the `rio-demo` URL:
+
+```plain
+$ kwt net svc
+Services in namespace 'default'
+
+Name                  Internal DNS                                    Cluster IP   Ports
+bold-wright0          bold-wright0.default.svc.cluster.local          10.0.11.198  80/tcp
+bold-wright0-metrics  bold-wright0-metrics.default.svc.cluster.local  10.0.8.94    9090/tcp
+bold-wright0-priv     bold-wright0-priv.default.svc.cluster.local     10.0.6.255   80/tcp
+bold-wright0-v0       bold-wright0-v0.default.svc.cluster.local       10.0.12.163  80/tcp
+kubernetes            kubernetes.default.svc.cluster.local            10.0.0.1     443/tcp
+```
+
+When the rio app is ready:
+
+```plain
+$ curl bold-wright0.default.svc.cluster.local
+Hi there, I'm running in Rio
 ```

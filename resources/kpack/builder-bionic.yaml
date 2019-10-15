@@ -1,0 +1,7 @@
+apiVersion: build.pivotal.io/v1alpha1
+kind: Builder
+metadata:
+  name: cf-bionic-builder
+spec:
+  image: cloudfoundry/cnb:bionic
+  updatePolicy: polling

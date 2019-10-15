@@ -5,7 +5,12 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _cluster_name() {
-  echo "${CLUSTER_NAME:="$(whoami)-dev"}"
+  [[ -f state/google/cluster-name ]] || {
+    mkdir -p state/google
+    : ${CLUSTER_NAME:="$(whoami)-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)"}
+    echo "$CLUSTER_NAME" > state/google/cluster-name
+  }
+  cat state/google/cluster-name
 }
 
 _setup_env() {
@@ -19,6 +24,7 @@ _setup_env() {
 failfast() {
   [[ "$(command -v gcloud)X" != "X" ]] || {
     echo "ERROR: missing 'gcloud' CLI from \$PATH" >> $1
+    echo "---> Please install Google Cloud SDK from https://cloud.google.com/sdk/" >> $1
   }
 
   [[ -f state/configuration/credhub-base-path ]] && {
@@ -28,9 +34,15 @@ failfast() {
   }
 }
 
+clusterStatus() {
+  gcloud container clusters list --format json | \
+    jq -r --arg name \
+    "$(_cluster_name)" '. | map(select(.name == $name))[0].status // ""'
+}
+
 up() {
   _setup_env
-  gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE" 2>&1 > /dev/null || {
+  [[ -z "$(clusterStatus)" ]] && {
     echo "Creating GKE cluster..."
     additional_flags=
     [[ "${cfcontainers:-}" == "1" ]] && {
@@ -55,31 +67,43 @@ up() {
       --enable-ip-alias \
       #--metadata disable-legacy-endpoints=true \ removed this flag, that cluster could be created
       ${additional_flags}
-
-    kubectl create clusterrolebinding cluster-admin-binding \
-      --clusterrole=cluster-admin \
-      --user="$(gcloud config get-value core/account)"
-
-    [[ "${cfcontainers:-}" == "1" ]] && {
-      echo "- Update nodes to support cgroup swap accounting..."
-      instance_names=$(gcloud compute instances list --filter="name~$(_cluster_name)" --format json | jq --raw-output '.[].name')
-      echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg"
-      # Update grub
-      echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
-      # Restart VMs
-      echo "$instance_names" | xargs gcloud compute instances reset
-    }
-
-    [[ -f state/configuration/credhub-base-path ]] && {
-      CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
-      echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
-      credhub set -n "${CREDHUB_BASE_PATH}/gke-project-name"   -t value -v "$PROJECT_NAME"
-      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$(_cluster_name)"
-      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"   -t value -v "$CLUSTER_ZONE"
-      credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-region" -t value -v "$CLUSTER_REGION"
-    }
   }
+
+  status=$(clusterStatus)
+  [[ "$status" == "STOPPING" ]] && { echo "Cluster stopping. Wait until its finished, or try a new \$CLUSTER_NAME"; exit 1; }
+  [[ "$status" != "RUNNING" ]] && { echo "Waiting for cluster, current status $status"; }
+  while [[ "$status" != "RUNNING" ]]; do
+    sleep 5
+    status=$(clusterStatus)
+  done
+
   gcloud container clusters get-credentials "$(_cluster_name)" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
+
+  kubectl create clusterrolebinding cluster-admin-binding \
+    --clusterrole=cluster-admin \
+    --user="$(gcloud config get-value core/account)" \
+    --dry-run=true -o yaml | kubectl apply -f -
+
+  [[ "${cfcontainers:-}" == "1" ]] && {
+    echo "- Update nodes to support cgroup swap accounting..."
+    instance_names=$(gcloud compute instances list --filter="name~$(_cluster_name)" --format json | jq --raw-output '.[].name')
+    echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg"
+    # Update grub
+    echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
+    # Restart VMs
+    echo "$instance_names" | xargs gcloud compute instances reset
+  }
+
+  [[ -f state/configuration/credhub-base-path ]] && {
+    CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
+    echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
+    credhub set -n "${CREDHUB_BASE_PATH}/gke-project-name"   -t value -v "$PROJECT_NAME"
+    credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-name"   -t value -v "$(_cluster_name)"
+    credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-zone"   -t value -v "$CLUSTER_ZONE"
+    credhub set -n "${CREDHUB_BASE_PATH}/gke-cluster-region" -t value -v "$CLUSTER_REGION"
+  }
+
+  exit 0
 }
 
 describe() {
@@ -88,6 +112,7 @@ describe() {
 }
 
 down() {
+  [[ -f state/google/cluster-name ]] || { echo "No record of provisioned cluster."; exit 1; }
   _setup_env
   [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
     echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."

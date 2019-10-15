@@ -2,6 +2,11 @@
 
 set -eu
 
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+mkdir -p state/systems
+touch state/systems/zzz-ignoreme
+
 usage() {
     echo "Bootstrap Kubernetes and/or subsystems for demonstrations:"
     echo "  up"
@@ -14,6 +19,7 @@ usage() {
     echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]             -- deploys Tekton CD"
     echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
+    echo "     [--rio]                -- deploys Rancher Rio"
     # echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--kubeapp]                -- deploys Kubeapps"
     echo "     [--service-catalog|--sc]   -- deploys Helm/Service Catalog"
@@ -26,11 +32,14 @@ usage() {
 # Ordered list of available systems
 # TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
 _available_systems() {
-  echo "helm
+  echo "
+    helm
     kubeapps
     servicecatalog cf-broker
     cf-operator scf
-    kpack tekton knative"
+    kpack tekton knative
+    rio
+  "
 }
 
 # Ordered list of requested systems
@@ -66,8 +75,13 @@ up() {
 
   [[ -f state/infrastructure ]] && { bin/bootstrap-infrastructure-"$(cat state/infrastructure)" up; }
 
+  [[ -z "$(_requested_systems)" ]] && { echo "No systems selected."; }
   for system in $(_requested_systems); do
-    "bin/bootstrap-system-$system" up
+    if [[ -z "${DRY_RUN:-}" ]]; then
+      "bin/bootstrap-system-$system" up
+    else
+      echo "---> bootstrap-system-$system up"
+    fi
   done
 }
 
@@ -111,6 +125,9 @@ case "${1:-usage}" in
           ;;
         --knative)
           echo 1 > state/systems/knative
+          ;;
+        --rio)
+          echo 1 > state/systems/rio
           ;;
         # --knative-addr-name)
         #   shift

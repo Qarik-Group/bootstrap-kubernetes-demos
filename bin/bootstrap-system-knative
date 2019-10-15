@@ -1,41 +1,98 @@
 #!/bin/bash
 
-# https://github.com/knative/serving/tree/master/third_party
-export knative_istio_version=${ISTIO_VERSION:-1.3.1}
-# https://github.com/knative/serving/releases
-export knative_version=${KNATIVE_VERSION:-0.9.0}
-
 set -eu
 
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+root_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+cd "$root_path"
+
+platform() {
+    if [ "$(uname)" == "Darwin" ]; then
+        echo "darwin"
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        echo "linux"
+    fi
+}
+
+_default_istio_version() {
+  grep "knative-istio-major" .versions | cut -d= -f2
+}
+
+_default_knative_version() {
+  grep "knative-serving" .versions | cut -d= -f2
+}
+
+discover_versions() {
+  # https://github.com/knative/serving/tree/master/third_party
+  KNATIVE_ISTIO_MAJOR_VERSION=${KNATIVE_ISTIO_MAJOR_VERSION:-$(_default_istio_version)}
+  export KNATIVE_ISTIO_VERSION=${KNATIVE_ISTIO_VERSION:-$(curl -sSL https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${KNATIVE_ISTIO_MAJOR_VERSION}-latest)}
+
+  # https://github.com/knative/serving/releases
+  export KNATIVE_VERSION=${KNATIVE_VERSION:-$(_default_knative_version)}
+}
+
+_kn_download() {
+    local url="https://storage.googleapis.com/knative-nightly/client/latest/kn-$(platform)-amd64"
+    local cli=kn
+
+    [[ -f bin/$cli ]] || {
+      echo "---> installing $cli cli into bin/"
+      (
+      cd $(mktemp -d)
+      curl -L >$cli "${url}"
+      chmod +x $cli
+      mv $cli "$root_path/bin/$cli"
+      )
+    }
+}
 
 up() {
+  discover_versions
+
   echo "Install/upgrade Knative without monitoring"
-  echo "---> install istio ${knative_istio_version}"
+  echo "---> install ${KNATIVE_ISTIO_VERSION}"
+  (
+  set -x
   kubectl apply --wait=true \
-    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-crds.yaml"
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${KNATIVE_ISTIO_VERSION}/istio-crds.yaml"
   kubectl apply --wait=true \
-    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/istio-${knative_istio_version}/istio-lean.yaml"
+    --filename "https://raw.githubusercontent.com/knative/serving/master/third_party/${KNATIVE_ISTIO_VERSION}/istio-lean.yaml"
+  )
+
+  _kn_download
+
   echo "---> wait for istio pilot to start"
+  (
+  set -x
   kubectl wait -l app=pilot pod --for condition=Ready -n istio-system --timeout 5m
+  )
+
   # while [[ $(kubectl get pods -n istio-system -l app=pilot -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; do echo "waiting for pod" && sleep 1; done
   echo "---> install knative serving/eventing CRDs"
   # TODO https://github.com/knative/serving/issues/5722
+  (
+  set -x
   kubectl apply --wait=true \
     --selector knative.dev/crd-install=true \
-    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
-    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml" || \
+    --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml" || \
   kubectl apply --wait=true \
     --selector knative.dev/crd-install=true \
-    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
-    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
-
+    --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml"
+  )
   echo "---> install knative serving/eventing"
+  (
+  set -x
   kubectl apply --wait=true \
-    --filename "https://github.com/knative/serving/releases/download/v${knative_version}/serving.yaml" \
-    --filename "https://github.com/knative/eventing/releases/download/v${knative_version}/release.yaml"
+    --filename "https://github.com/knative/serving/releases/download/v${KNATIVE_VERSION}/serving.yaml" \
+    --filename "https://github.com/knative/eventing/releases/download/v${KNATIVE_VERSION}/release.yaml"
+  )
+
   echo "---> wait for knative to start"
+  (
+  set -x
   kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
+  )
 
 
   # knctl domain create --default --domain knative.starkandwayne.com

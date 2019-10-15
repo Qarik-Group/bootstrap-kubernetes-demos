@@ -1,17 +1,31 @@
 #!/bin/bash
 
-export kpack_version=${KPACK_VERSION:-0.0.4}
-export kpack_release_url=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/releases/download/v${kpack_version}/release-${kpack_version}.yaml"}
-
 set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+_default_version() {
+  grep "kpack" .versions | cut -d= -f2
+}
+
+discover_versions() {
+  export KPACK_VERSION=${KPACK_VERSION:-$(_default_version)}
+  export KPACK_RELEASE_URL=${KPACK_RELEASE_URL:-"https://github.com/pivotal/kpack/releases/download/v${KPACK_VERSION}/release-${KPACK_VERSION}.yaml"}
+}
+
 up() {
-  echo "Install kpack v${kpack_version}"
-  kubectl apply -f "$kpack_release_url"
+  discover_versions
+
+  echo "Install kpack v${KPACK_VERSION}"
+  (
+  set -x
+  kubectl apply -f "$KPACK_RELEASE_URL"
+  )
   echo "Installing resources from resources/kpack/*.yaml"
+  (
+  set -x
   ls resources/kpack/*.yaml | xargs -L1 kubectl apply -f
+  )
 }
 
 case "${1:-usage}" in

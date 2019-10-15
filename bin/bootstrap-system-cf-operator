@@ -2,9 +2,6 @@
 
 set -eu
 
-# currently this combo works; others are not working. See respective issues.
-export CFOPERATOR_TAG=${CFOPERATOR_TAG:-v0.4.1-60.g642832d0}
-
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 
@@ -17,36 +14,84 @@ _namespace() {
   cat state/configuration/scf-namespace
 }
 
-failfast() {
-  [[ -d vendor/cf-operator/deploy/helm/cf-operator ]] || {
-    >&2 echo "Fetching missing submodules..."
-    git submodule update --init
-  }
+_default_helm_file_version() {
+  grep "cf-operator-helm-file" .versions | cut -d= -f2
 }
 
-up() {
-  echo "Install Cloud Foundry/Quarks (cf-operator)"
+discover_versions() {
+  export CF_OPERATOR_HELM_FILE=${CF_OPERATOR_HELM_FILE:-$(_default_helm_file_version)}
+
+  # Install latest from CI/S3 bucket by default
+  export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/release/helm-charts/${CF_OPERATOR_HELM_FILE}"}
+  # Override:
+  # [inside path/to/cf-operator]: bin/build-helm
+  # [here]:
+  #   CF_OPERATOR_HELM_TGZ=path/to/cf-operator/helm/cf-operator-v0.4.2+42.gf51bf355.tgz
+}
+
+failfast() {
+  printf ""
+}
+
+build_from_src() {
   (
     cd vendor/cf-operator
     rm -f helm/*tgz
     bin/build-helm
   )
-  cf_operator_helm_tgz=$(ls vendor/cf-operator/helm/cf-operator*tgz)
+  ls vendor/cf-operator/helm/cf-operator*tgz
+}
+
+up() {
+  discover_versions
+  failfast
+
+  echo "Install Cloud Foundry/Quarks (cf-operator)"
   # hardcoded at moment for current vendor/cf-operator submodule version
+  [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
+    release_date=$(aws s3 ls s3://cf-operators/release/helm-charts/ | grep "$CF_OPERATOR_HELM_FILE" | awk '{print $1}')
+  }
+  echo "--> Using ${CF_OPERATOR_HELM_FILE}${release_date:+ from ${release_date}}"
+  # TODO: restore $CFOPERATOR_TAG override if it has a purpose
   # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
-  echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
-  echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
-  helm upgrade --install --wait --namespace "$(_namespace)" \
+  # [[ -n "${CFOPERATOR_TAG:-}" ]] && {
+  #   echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
+  #   echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
+  # }
+
+  # cf-operator versions have + in them; let's encode that as %2B
+  CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ//'+'/%2B}
+
+  ns=$(_namespace)
+  (
+  set -x
+  helm upgrade --install --wait --namespace "$ns" \
     cf-operator \
-    "${cf_operator_helm_tgz}" \
+    "${CF_OPERATOR_HELM_TGZ}" \
     ${CFOPERATOR_TAG:+--set "image.tag=${CFOPERATOR_TAG}"} \
     --set "provider=gke" \
-    --set "operator-webhook-use-service-reference=true" # coming
+    --set "operator-webhook-use-service-reference=true" # coming in future
+  )
+}
 
-  # echo "--> Testing cf-operator with example nats deployment"
-  # kubectl apply -n "$(_namespace)" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
-  # sleep 5 # TODO: wait for boshdeployment state change
-  # kubectl get pods -n "$(_namespace)"
+sanitytest() {
+  echo "--> Testing cf-operator with example nats deployment"
+  kubectl apply -n "$(_namespace)" -f vendor/cf-operator/docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+  sleep 5 # TODO: wait for boshdeployment state change
+  kubectl get pods -n "$(_namespace)"
+}
+
+restart() {
+  kubectl delete validatingwebhookconfigurations cf-operator-hook-"$(_namespace)" --ignore-not-found
+  kubectl delete mutatingwebhookconfigurations cf-operator-hook-"$(_namespace)" --ignore-not-found
+  kubectl delete pod -l name=cf-operator -n "$(_namespace)" --ignore-not-found
+}
+
+down() {
+  helm delete cf-operator --purge
+
+  kubectl delete validatingwebhookconfigurations -l name=cf-operator-webhook
+  kubectl delete mutatingwebhookconfigurations -l name=cf-operator-webhook
 }
 
 case "${1:-usage}" in
@@ -58,6 +103,16 @@ case "${1:-usage}" in
   up)
     shift
     up
+    ;;
+
+  restart)
+    shift
+    restart
+    ;;
+
+  down)
+    shift
+    down
     ;;
 
   *)

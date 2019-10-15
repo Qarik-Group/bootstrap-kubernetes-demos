@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  export SKIP_SUDO=1
+  export INSTALL_RIO_BIN_DIR=$PWD/bin
+  curl -sfL https://raw.githubusercontent.com/drnic/rio/my-installer/install.sh | sh -
+
+  rio install --http-port 80 --https-port 443
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    ;;
+esac
+
+
