@@ -2,9 +2,6 @@
 
 set -eu
 
-export CF_OPERATOR_VERSION=${CF_OPERATOR_VERSION:-"cf-operator-v0.4.0+1.g3d277af0.tgz"}
-export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/release/helm-charts/${CF_OPERATOR_VERSION}"}
-
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 
@@ -15,6 +12,21 @@ _namespace() {
     echo "${CF_NAMESPACE:-scf}" > state/configuration/scf-namespace
   }
   cat state/configuration/scf-namespace
+}
+
+_default_helm_file_version() {
+  grep "cf-operator-helm-file" .versions | cut -d= -f2
+}
+
+discover_versions() {
+  export CF_OPERATOR_HELM_FILE=${CF_OPERATOR_HELM_FILE:-$(_default_helm_file_version)}
+
+  # Install latest from CI/S3 bucket by default
+  export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/release/helm-charts/${CF_OPERATOR_HELM_FILE}"}
+  # Override:
+  # [inside path/to/cf-operator]: bin/build-helm
+  # [here]:
+  #   CF_OPERATOR_HELM_TGZ=path/to/cf-operator/helm/cf-operator-v0.4.2+42.gf51bf355.tgz
 }
 
 failfast() {
@@ -31,24 +43,35 @@ build_from_src() {
 }
 
 up() {
+  discover_versions
+  failfast
+
   echo "Install Cloud Foundry/Quarks (cf-operator)"
   # hardcoded at moment for current vendor/cf-operator submodule version
-  # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
-  echo "--> Using ${CF_OPERATOR_HELM_TGZ}"
-  [[ -n "${CFOPERATOR_TAG:-}" ]] && {
-    echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
-    echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
+  [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
+    release_date=$(aws s3 ls s3://cf-operators/release/helm-charts/ | grep "$CF_OPERATOR_HELM_FILE" | awk '{print $1}')
   }
+  echo "--> Using ${CF_OPERATOR_HELM_FILE}${release_date:+ from ${release_date}}"
+  # TODO: restore $CFOPERATOR_TAG override if it has a purpose
+  # : "${CFOPERATOR_TAG:=$(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r ".results[].name" | grep "^v0." | head -n1)}"
+  # [[ -n "${CFOPERATOR_TAG:-}" ]] && {
+  #   echo "--> Using cfcontainerization/cf-operator:${CFOPERATOR_TAG}"
+  #   echo "    From $(curl -sS 'https://registry.hub.docker.com/v2/repositories/cfcontainerization/cf-operator/tags/' | jq -r --arg tag "$CFOPERATOR_TAG" '.results | map(select(.name == $tag))[].last_updated // "not recently"')"
+  # }
 
   # cf-operator versions have + in them; let's encode that as %2B
   CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ//'+'/%2B}
 
-  helm upgrade --install --wait --namespace "$(_namespace)" \
+  ns=$(_namespace)
+  (
+  set -x
+  helm upgrade --install --wait --namespace "$ns" \
     cf-operator \
     "${CF_OPERATOR_HELM_TGZ}" \
     ${CFOPERATOR_TAG:+--set "image.tag=${CFOPERATOR_TAG}"} \
     --set "provider=gke" \
-    --set "operator-webhook-use-service-reference=true" # coming
+    --set "operator-webhook-use-service-reference=true" # coming in future
+  )
 }
 
 sanitytest() {
