@@ -28,6 +28,7 @@ _setup_env() {
   export ADMIN_USERNAME="scf-admin"
   export NODEPOOL_NAME="mypool"
   export K8S_VERSION="1.15.4"
+  export additional_flags=""
 }
 
 failfast() {
@@ -44,75 +45,70 @@ failfast() {
 
 up() {
   _setup_env
-  az account set --subscription $SUBSCRIPTION_ID
+  az account set --subscription "$SUBSCRIPTION_ID"
   echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
   az provider list | egrep --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
   az group create --name $RG_NAME --location $REGION
   echo "Creating AKS cluster..."
-      
-    az aks create --resource-group $RG_NAME --name $AKS_NAME \
-      --node-count $NODE_COUNT --admin-username $ADMIN_USERNAME \
-      --ssh-key-value $SSH_KEY_VALUE --node-vm-size $NODE_VM_SIZE \
-      --node-osdisk-size=80 --nodepool-name $NODEPOOL_NAME \
-      --kubernetes-version $K8S_VERSION 
-  
-    az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
+  additional_flags="${additional_flags} --ssh-key-value ${SSH_KEY_VALUE}"
+  additional_flags="${additional_flags} --verbose"
+  az aks create --resource-group ${RG_NAME} --name ${AKS_NAME} \
+    --node-count ${NODE_COUNT} --admin-username ${ADMIN_USERNAME} \
+    --node-vm-size ${NODE_VM_SIZE} \
+    --node-osdisk-size=80 --nodepool-name ${NODEPOOL_NAME} \
+    --kubernetes-version ${K8S_VERSION} \
+    ${additional_flags}
 
+  az aks wait -g ${RG_NAME} -n ${AKS_NAME} --exists --interval 2 --timeout 900
 
-    [[ "${cfcontainers:-}" == "1" ]] && {
-      echo "- Update nodes to support cgroup swap accounting..."
-      export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-      export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
-      for i in $VM_NODES
-      do
-         az vm run-command invoke --resource-group $MC_RG_NAME --name $i --command-id RunShellScript --scripts \
-         "sudo sed --in-place --regexp-extended 's|^(GRUB_CMDLINE_LINUX_DEFAULT=)\"(.*.)\"|\1\"\2 swapaccount=1\"|' \
-         /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub"
-          az vm restart --resource-group $MC_RG_NAME --name $i
-      done
-      #instance_names=$(gcloud compute instances list --filter="name~$(_cluster_name)" --format json | jq --raw-output '.[].name')
-      #echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg"
-      # Update grub
-      #echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
-      # Restart VMs
-      #echo "$instance_names" | xargs gcloud compute instances reset
-    }
+  echo "- Update nodes to support cgroup swap accounting..."
+  MC_RG_NAME=$(az aks show --resource-group "$RG_NAME" --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
+  VM_NODES=$(az vm list --resource-group "$MC_RG_NAME" --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+  for i in $VM_NODES
+  do
+     az vm run-command invoke --resource-group "$MC_RG_NAME" --name "$i" --command-id RunShellScript --scripts \
+     "sudo sed --in-place --regexp-extended 's|^(GRUB_CMDLINE_LINUX_DEFAULT=)\"(.*.)\"|\1\"\2 swapaccount=1\"|' \
+     /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub"
+      az vm restart --resource-group "$MC_RG_NAME" --name "$i"
+  done
 
-    [[ -f state/configuration/credhub-base-path ]] && {
-      CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
-      echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
-      credhub set -n "${CREDHUB_BASE_PATH}/aks-project-name"   -t value -v "$RG_NAME"
-      credhub set -n "${CREDHUB_BASE_PATH}/aks-cluster-name"   -t value -v "$AKS_NAME"
-      credhub set -n "${CREDHUB_BASE_PATH}/aks-cluster-region" -t value -v "$REGION"
-    }
+  az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
   }
- # gcloud container clusters get-credentials "$(_cluster_name)" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
-
 
 describe() {
   _setup_env
-  #gcloud container clusters describe "$(_cluster_name)" --region "$CLUSTER_ZONE"
   az aks list --resource-group $RG_NAME --subscription $SUBSCRIPTION_ID
 }
 
 down() {
   _setup_env
   echo 'delete the aks cluster....'
-  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
-    echo "Deleting values from Credhub ${CREDHUB_BASE_PATH}..."
-    set +e
-    credhub delete -n "${CREDHUB_BASE_PATH}/aks-project-name"
-    credhub delete -n "${CREDHUB_BASE_PATH}/aks-cluster-name"
-    credhub delete -n "${CREDHUB_BASE_PATH}/aks-cluster-region"
-    credhub delete -n "${CREDHUB_BASE_PATH}/helm-ca"
-    credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-cert"
-    credhub delete -n "${CREDHUB_BASE_PATH}/helm-tiller-key"
-    set -e
-  }
   az aks delete --resource-group $RG_NAME --name $AKS_NAME --verbose
-
 }
 
+sus() {
+  _setup_env
+  echo 'supend the aks cluster vms....'
+  export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
+  export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+  for i in $VM_NODES
+  do
+      echo $i
+      az vm deallocate --resource-group $MC_RG_NAME --name $i --verbose
+  done
+}
+
+repl() {
+  _setup_env
+  echo 'resume the aks cluster vms....'
+  export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
+  export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+  for i in $VM_NODES
+  do
+      echo $i
+      az vm start --resource-group $MC_RG_NAME --name $i --verbose
+  done
+}
 
 case "${1:-usage}" in
   failfast)
@@ -133,6 +129,16 @@ case "${1:-usage}" in
   down)
     shift
     down
+    ;;
+
+  sus)
+    shift  
+    sus
+    ;;
+
+  repl)
+    shift  
+    repl
     ;;
 
   *)
