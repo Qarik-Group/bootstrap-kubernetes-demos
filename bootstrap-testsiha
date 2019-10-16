@@ -1,8 +1,9 @@
 #!/bin/bash
+set -eu
 export HELM_TLS_VERIFY=true 
 export PATH=$PWD/bin:$PWD/vendor/helm-tiller-manager/bin:$PATH
 echo '------------------------first install cluster-----------------------'
-#./bin/bootstrap-infrastructure-azure up
+./bin/bootstrap-infrastructure-azure up
 echo '------------------------install helm into cluster-------------------'
 ./bin/bootstrap-system-helm up
 echo '------------------------install cf-operator in k8s------------------'
