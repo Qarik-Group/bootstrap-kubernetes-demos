@@ -1,5 +1,0 @@
-export HELM_TLS_VERIFY=true 
-./bootstrap-infrastructure-azure up
-./bootstrap-system-helm up
-./bootstrap-system-cf-operator up
-./bootstrap-system-scf

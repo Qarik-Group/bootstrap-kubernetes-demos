@@ -22,8 +22,8 @@ _setup_env() {
   export AKS_NAME="ihaCFevaluation"
   export REGION="westeurope"
   export NODE_COUNT="3"
-  #export NODE_VM_SIZE="Standard_DS4_v2" #this size is recommended by suse
-  export NODE_VM_SIZE="Standard_A2m_v2"
+  export NODE_VM_SIZE="Standard_DS4_v2" #this size is recommended by suse
+  #export NODE_VM_SIZE="Standard_A2m_v2"
   export SSH_KEY_VALUE="~/.ssh/id_rsa.pub"
   export ADMIN_USERNAME="scf-admin"
   export NODEPOOL_NAME="mypool"
@@ -56,11 +56,9 @@ up() {
       --node-osdisk-size=80 --nodepool-name $NODEPOOL_NAME \
       --kubernetes-version $K8S_VERSION 
   
-    az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
 
 
-    [[ "${cfcontainers:-}" == "1" ]] && {
-      echo "- Update nodes to support cgroup swap accounting..."
+    echo "- Update nodes to support cgroup swap accounting..."
       export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
       export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
       for i in $VM_NODES
@@ -76,8 +74,7 @@ up() {
       #echo "$instance_names" | xargs -I {} gcloud compute ssh {} -- "sudo update-grub"
       # Restart VMs
       #echo "$instance_names" | xargs gcloud compute instances reset
-    }
-
+    
     [[ -f state/configuration/credhub-base-path ]] && {
       CREDHUB_BASE_PATH=$(cat state/configuration/credhub-base-path)
       echo "Storing cluster into credhub ${CREDHUB_BASE_PATH}..."
@@ -85,8 +82,12 @@ up() {
       credhub set -n "${CREDHUB_BASE_PATH}/aks-cluster-name"   -t value -v "$AKS_NAME"
       credhub set -n "${CREDHUB_BASE_PATH}/aks-cluster-region" -t value -v "$REGION"
     }
+
+    az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
+./bin/kube-ready-state-check.sh 
   }
  # gcloud container clusters get-credentials "$(_cluster_name)" --region "$CLUSTER_ZONE" --project "$PROJECT_NAME"
+
 
 
 describe() {

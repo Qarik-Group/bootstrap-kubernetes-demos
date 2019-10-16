@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -eu
-
+set -xv
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _cluster_name() {
