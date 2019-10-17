@@ -19,6 +19,7 @@ usage() {
     echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]             -- deploys Tekton CD"
     echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
+    echo "     [--dapr]               -- deploys Dapr"
     echo "     [--rio]                -- deploys Rancher Rio"
     # echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--kubeapp]                -- deploys Kubeapps"
@@ -125,6 +126,10 @@ case "${1:-usage}" in
           ;;
         --knative)
           echo 1 > state/systems/knative
+          ;;
+        --dapr)
+          echo 1 > state/systems/dapr
+          echo 1 > state/systems/helm
           ;;
         --rio)
           echo 1 > state/systems/rio

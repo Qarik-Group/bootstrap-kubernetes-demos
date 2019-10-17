@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -eu
+
+# helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
+export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  echo "Install/upgrade Dapr via Helm"
+  helm repo add dapr https://daprio.azurecr.io/helm/v1/repo
+  helm repo update
+  helm upgrade --install dapr dapr/dapr --namespace dapr-system --wait
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    ;;
+esac
