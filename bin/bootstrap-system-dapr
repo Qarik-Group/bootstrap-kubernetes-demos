@@ -10,8 +10,11 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 up() {
   echo "Install/upgrade Dapr via Helm"
   helm repo add dapr https://daprio.azurecr.io/helm/v1/repo
-  helm repo update
+
   helm upgrade --install dapr dapr/dapr --namespace dapr-system --wait
+
+  export DAPR_INSTALL_DIR=$PWD/bin
+  wget -q https://raw.githubusercontent.com/dapr/cli/master/install/install.sh -O - | /bin/bash
 }
 
 case "${1:-usage}" in

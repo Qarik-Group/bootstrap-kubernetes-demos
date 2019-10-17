@@ -40,6 +40,7 @@ _available_systems() {
     cf-operator scf
     kpack tekton knative
     rio
+    dapr
   "
 }
 

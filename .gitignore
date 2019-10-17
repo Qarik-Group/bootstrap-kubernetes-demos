@@ -4,3 +4,4 @@ state
 bin/kn
 bin/helm
 bin/rio
+bin/dapr
