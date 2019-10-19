@@ -18,7 +18,6 @@ _cluster_name() {
 
 _setup_env() {
   export SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show --query '{ subscription_id: id }' -o tsv)}"
-  #export PROJECT_NAME="${PROJECT_NAME:-$(gcloud config get-value core/project)}"
   export RG_NAME="rsg-name"
   export AKS_NAME="clusername"
   export REGION="westeurope"
