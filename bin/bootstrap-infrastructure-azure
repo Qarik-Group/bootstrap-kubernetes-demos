@@ -18,7 +18,6 @@ _cluster_name() {
 
 _setup_env() {
   export SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show --query '{ subscription_id: id }' -o tsv)}"
-  #export PROJECT_NAME="${PROJECT_NAME:-$(gcloud config get-value core/project)}"
   export RG_NAME="rsg-name"
   export AKS_NAME="clusername"
   export REGION="westeurope"
@@ -62,7 +61,6 @@ up() {
   
   az aks wait -g ${RG_NAME} -n ${AKS_NAME} --exists --interval 2 --timeout 900
 
-
   echo "- Update nodes to support cgroup swap accounting..."
   export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
   export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
@@ -75,7 +73,6 @@ up() {
   done
 
   az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
-  #./bin/kube-ready-state-check.sh Check cluster for SCF
   }
 
 
