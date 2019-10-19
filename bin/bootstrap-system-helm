@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -vx
+set -eu
 
 # Install S&W Helm Charts rather than some arbitrary default of nonsense
 export STABLE_REPO_URL=${STABLE_REPO_URL:-https://helm.starkandwayne.com}
