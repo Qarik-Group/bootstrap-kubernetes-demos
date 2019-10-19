@@ -1,14 +1,15 @@
 #!/bin/bash
 
-#TODO 
+# Infos
 # https://github.com/SUSE/scf/wiki/How-to-Install-SCF#requirements-for-kubernetes
 # https://documentation.suse.com/suse-cap/1/html/cap-guides/cha-cap-depl-aks.html 
-# add https://github.com/SUSE/scf/blob/develop/bin/dev/kube-ready-state-check.sh 
+
 
 set -eu
 echo ' make sure you have "az" "kubectl" "jq" "cf" "curl" and "sed" installed! '
-echo ' your azure user need a directory role "Application Developer" or "Application Administrator" '
-echo ' use az login and pick the wanted subscription for aks generation with "azure account list" and  "az account set --subscription <name or id>" '
+echo ' The azure user need the following directory role "Application Developer" or "Application Administrator" '
+echo ' use az login and pick the wanted sub. '
+echo ' _____________________________________________________________________________________________'
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _cluster_name() {
@@ -18,8 +19,8 @@ _cluster_name() {
 _setup_env() {
   export SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show --query '{ subscription_id: id }' -o tsv)}"
   #export PROJECT_NAME="${PROJECT_NAME:-$(gcloud config get-value core/project)}"
-  export RG_NAME="iha-aksrsg-auto"
-  export AKS_NAME="ihaCFevaluation"
+  export RG_NAME="rsg-name"
+  export AKS_NAME="clusername"
   export REGION="westeurope"
   export NODE_COUNT="3"
   export NODE_VM_SIZE="Standard_DS4_v2" #this size is recommended by suse
