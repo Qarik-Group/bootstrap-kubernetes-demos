@@ -30,7 +30,6 @@ _setup_env() {
   export SSH_KEY_VALUE="~/.ssh/id_rsa.pub"
   export ADMIN_USERNAME="scf-admin"
   export NODEPOOL_NAME="mypool"
-  export K8S_VERSION="1.15.4"
   export additional_flags=""
 }
 
@@ -76,6 +75,9 @@ up() {
   }
 
   az aks wait -g "${RG_NAME}" -n "${AKS_NAME}" --created --interval 2 --timeout 900
+
+  echo "Current Kubernetes nodes:"
+  kubectl get nodes
 
   [[ "${cfcontainers:-}" == "1" ]] && {
     echo "- Update nodes to support cgroup swap accounting..."
