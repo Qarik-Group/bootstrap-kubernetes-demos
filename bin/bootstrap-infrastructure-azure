@@ -75,7 +75,7 @@ up() {
       ${SSH_KEY_VALUE:+ --ssh-key-value "$SSH_KEY_VALUE"}
   }
 
-  az aks wait -g "${RG_NAME}" -n "${AKS_NAME}" --exists --interval 2 --timeout 900
+  az aks wait -g "${RG_NAME}" -n "${AKS_NAME}" --created --interval 2 --timeout 900
 
   [[ "${cfcontainers:-}" == "1" ]] && {
     echo "- Update nodes to support cgroup swap accounting..."
