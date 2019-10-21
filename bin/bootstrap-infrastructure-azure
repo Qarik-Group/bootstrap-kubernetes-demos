@@ -4,12 +4,8 @@
 # https://github.com/SUSE/scf/wiki/How-to-Install-SCF#requirements-for-kubernetes
 # https://documentation.suse.com/suse-cap/1/html/cap-guides/cha-cap-depl-aks.html 
 
-
 set -eu
-echo ' make sure you have "az" "kubectl" "jq" "cf" "curl" and "sed" installed! '
-echo ' The azure user need the following directory role "Application Developer" or "Application Administrator" '
-echo ' use az login and pick the wanted sub. '
-echo ' _____________________________________________________________________________________________'
+
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _cluster_name() {
@@ -47,7 +43,7 @@ up() {
   _setup_env
   az account set --subscription "$SUBSCRIPTION_ID"
   echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
-  az provider list | egrep --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
+  az provider list | grep -E --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
   az group create --name $RG_NAME --location $REGION
   echo "Creating AKS cluster..."
   additional_flags="${additional_flags} --ssh-key-value ${SSH_KEY_VALUE}"
