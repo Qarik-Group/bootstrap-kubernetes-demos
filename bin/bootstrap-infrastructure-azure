@@ -40,62 +40,66 @@ failfast() {
 }
 
 clusterJSON() {
-  az aks list | jq -r --arg name "name" '. | map(select(.name == $name))[0]'
+  az aks list | jq -r --arg name "$AKS_NAME" '. | map(select(.name == $name))[0]'
 }
 
 clusterProvisioningState() {
-  clusterJSON | jq -r ".provisioningState"
+  clusterJSON | jq -r '.provisioningState // ""'
 }
 
 up() {
   _setup_env
 
-  az account set --subscription "$SUBSCRIPTION_ID"
-  echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
-  az provider list | grep -E --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
-  az group create --name "$RG_NAME" --location "$REGION"
-  echo "Creating AKS cluster..."
-  az aks create \
-    --resource-group "${RG_NAME}" \
-    --name "${AKS_NAME}" \
-    --node-count ${NODE_COUNT} \
-    --admin-username ${ADMIN_USERNAME} \
-    --node-vm-size ${NODE_VM_SIZE} \
-    --node-osdisk-size=80 --nodepool-name ${NODEPOOL_NAME} \
-    ${K8S_VERSION:+--kubernetes-version "$K8S_VERSION"} \
-    ${DEBUG:+--verbose} \
-    ${SSH_KEY_VALUE:+ --ssh-key-value "$SSH_KEY_VALUE"}
+  [[ -z "$(clusterProvisioningState)" ]] && {
+    az account set --subscription "$SUBSCRIPTION_ID"
+    echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
+    az provider list | grep -E --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
+    az group create --name "$RG_NAME" --location "$REGION"
+    echo "Creating AKS cluster..."
+    az aks create \
+      --resource-group "${RG_NAME}" \
+      --name "${AKS_NAME}" \
+      --node-count ${NODE_COUNT} \
+      --admin-username ${ADMIN_USERNAME} \
+      --node-vm-size ${NODE_VM_SIZE} \
+      --node-osdisk-size=80 --nodepool-name ${NODEPOOL_NAME} \
+      ${K8S_VERSION:+--kubernetes-version "$K8S_VERSION"} \
+      ${DEBUG:+--verbose} \
+      ${SSH_KEY_VALUE:+ --ssh-key-value "$SSH_KEY_VALUE"}
+  }
 
   az aks wait -g "${RG_NAME}" -n "${AKS_NAME}" --exists --interval 2 --timeout 900
 
-  echo "- Update nodes to support cgroup swap accounting..."
-  MC_RG_NAME=$(az aks show --resource-group "$RG_NAME" --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-  VM_NODES=$(az vm list --resource-group "$MC_RG_NAME" --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
-  for i in $VM_NODES
-  do
-     az vm run-command invoke --resource-group "$MC_RG_NAME" --name "$i" --command-id RunShellScript --scripts \
-     "sudo sed --in-place --regexp-extended 's|^(GRUB_CMDLINE_LINUX_DEFAULT=)\"(.*.)\"|\1\"\2 swapaccount=1\"|' \
-     /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub"
-      az vm restart --resource-group "$MC_RG_NAME" --name "$i"
-  done
+  [[ "${cfcontainers:-}" == "1" ]] && {
+    echo "- Update nodes to support cgroup swap accounting..."
+    MC_RG_NAME=$(az aks show --resource-group "$RG_NAME" --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
+    VM_NODES=$(az vm list --resource-group "$MC_RG_NAME" --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+    for i in $VM_NODES
+    do
+      az vm run-command invoke --resource-group "$MC_RG_NAME" --name "$i" --command-id RunShellScript --scripts \
+      "sudo sed --in-place --regexp-extended 's|^(GRUB_CMDLINE_LINUX_DEFAULT=)\"(.*.)\"|\1\"\2 swapaccount=1\"|' \
+      /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub"
+        az vm restart --resource-group "$MC_RG_NAME" --name "$i"
+    done
+  }
 
   az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
-  }
+}
 
 describe() {
   _setup_env
-  az aks list --resource-group $RG_NAME --subscription $SUBSCRIPTION_ID
+  az aks list --resource-group $RG_NAME --subscription "$SUBSCRIPTION_ID"
 }
 
 down() {
   _setup_env
-  echo 'delete the aks cluster....'
+  echo 'Deleting the AKS cluster....'
   az aks delete --resource-group $RG_NAME --name $AKS_NAME --verbose
 }
 
-sus() {
+suspend() {
   _setup_env
-  echo 'supend the aks cluster vms....'
+  echo 'Supend the AKS cluster vms....'
   export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
   export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
   for i in $VM_NODES
@@ -105,15 +109,15 @@ sus() {
   done
 }
 
-repl() {
+resume() {
   _setup_env
-  echo 'resume the aks cluster vms....'
-  export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-  export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+  echo 'Resume the ASK cluster vms....'
+  MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
+  VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
   for i in $VM_NODES
   do
-      echo $i
-      az vm start --resource-group $MC_RG_NAME --name $i --verbose
+      echo "Restarting node $i..."
+      az vm start --resource-group "$MC_RG_NAME" --name "$i" --verbose
   done
 }
 
@@ -138,14 +142,14 @@ case "${1:-usage}" in
     down
     ;;
 
-  sus)
-    shift  
-    sus
+  sus|suspend)
+    shift
+    suspend
     ;;
 
-  repl)
-    shift  
-    repl
+  repl|restore|restart|resume)
+    shift
+    resume
     ;;
 
   *)
