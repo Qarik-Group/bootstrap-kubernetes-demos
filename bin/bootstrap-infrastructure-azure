@@ -8,14 +8,21 @@ set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+state_dir=state/azure
+mkdir -p $state_dir
+
 _cluster_name() {
-  echo "${CLUSTER_NAME:="$(whoami)-dev"}"
+  [[ -f $state_dir/cluster-name ]] || {
+    : ${CLUSTER_NAME:="$(whoami)-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)"}
+    echo "$CLUSTER_NAME" > $state_dir/cluster-name
+  }
+  cat $state_dir/cluster-name
 }
 
 _setup_env() {
   export SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show --query '{ subscription_id: id }' -o tsv)}"
   export RG_NAME="rsg-name"
-  export AKS_NAME="clusername"
+  export AKS_NAME=$(_cluster_name)
   export REGION="westeurope"
   export NODE_COUNT="3"
   #export NODE_VM_SIZE="Standard_DS4_v2" #this size is recommended by suse
