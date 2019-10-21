@@ -10,7 +10,8 @@ touch state/systems/zzz-ignoreme
 usage() {
     echo "Bootstrap Kubernetes and/or subsystems for demonstrations:"
     echo "  up"
-    echo "     [--gke|--google]       -- bootstrap new GKE cluster"
+    echo "     [--gke|--google]       -- bootstrap new Google GKE cluster"
+    echo "     [--az|--azure]         -- bootstrap new Azure AKE cluster"
     echo "     [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets"
     echo ""
     echo "     [--helm|--tiller]      -- deploys secure Helm"
@@ -102,6 +103,9 @@ case "${1:-usage}" in
       case "${1:-}" in
         --gke|--google)
           echo "google" > state/infrastructure
+          ;;
+        --az|--azure)
+          echo "azure" > state/infrastructure
           ;;
         # --cfcontainers)
         # Is this section really for Diego for SCF?
