@@ -23,15 +23,23 @@ _setup_env() {
   export SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show --query '{ subscription_id: id }' -o tsv)}"
   export RG_NAME="rsg-name"
   export AKS_NAME=$(_cluster_name)
-  export REGION="westeurope"
-  export NODE_COUNT="3"
+  [[ -z "${CLUSTER_REGION:-}" && -z $(az configure -l | jq -r 'map(select(.name == "location"))[0].value // ""') ]] && {
+    echo "Please set a default AKS cluster region or provide \$CLUSTER_REGION"
+    echo "--> az configure --defaults location=westus2"
+    echo
+    echo "To see a list of available region locations for AKS:"
+    echo "--> az aks get-versions -l showme"
+    exit 1
+  }
+  az aks get-versions > /dev/null
+  export NODE_COUNT=${NODE_COUNT:-3}
   #export NODE_VM_SIZE="Standard_DS4_v2" #this size is recommended by suse
-  export NODE_VM_SIZE="Standard_A2m_v2"
-  export SSH_KEY_VALUE="~/.ssh/id_rsa.pub"
-  export ADMIN_USERNAME="scf-admin"
-  export NODEPOOL_NAME="mypool"
+  export NODE_VM_SIZE=${NODE_VM_SIZE:-Standard_A2m_v2}
+  # export SSH_KEY_VALUE="~/.ssh/id_rsa.pub"
+  export ADMIN_USERNAME=${ADMIN_USERNAME:-bootstrap-admin}
+  export NODEPOOL_NAME=${NODEPOOL_NAME:-mypool}
 
-  K8S_VERSION=${K8S_VERSION:-$(az aks get-versions -l "$REGION" | jq -r ".orchestrators | last | .orchestratorVersion")}
+  export K8S_VERSION=${K8S_VERSION:-$(az aks get-versions ${CLUSTER_REGION:+-l "$CLUSTER_REGION"} | jq -r ".orchestrators | last | .orchestratorVersion")}
 }
 
 failfast() {
@@ -61,7 +69,11 @@ up() {
     az account set --subscription "$SUBSCRIPTION_ID"
     echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
     az provider list | grep -E --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
-    az group create --name "$RG_NAME" --location "$REGION"
+
+    az group create \
+      --name "$RG_NAME" \
+      ${CLUSTER_REGION:+--location "$CLUSTER_REGION"}
+
     echo "Creating AKS cluster..."
     az aks create \
       --resource-group "${RG_NAME}" \
