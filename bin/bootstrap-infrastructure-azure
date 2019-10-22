@@ -68,7 +68,15 @@ up() {
   [[ -z "$(clusterProvisioningState)" ]] && {
     az account set --subscription "$SUBSCRIPTION_ID"
     echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
-    az provider list | grep -E --word-regexp 'Microsoft.Network|Microsoft.Storage|Microsoft.Compute|Microsoft.ContainerService'
+    provider_json=$(az provider list -o json)
+    required_namespaces=(Microsoft.Network Microsoft.Storage Microsoft.Compute Microsoft.ContainerService)
+    missing=
+    for namespace in "${required_namespaces[@]}"; do
+      status=$(echo "$provider_json" | jq -r --arg namespace "$namespace" '. | map(select(.namespace == $namespace))[0].registrationState // ""')
+      echo "--> $namespace: $status"
+      [[ "${status}" == "Registered" ]] || { missing=1; }
+    done
+    [[ "$missing" == "1" ]] && { echo "Please register for required services with Azure."; exit 1; }
 
     az group create \
       --name "$RG_NAME" \
