@@ -83,6 +83,7 @@ up() {
       }
     done
 
+    echo "Creating Azure Resource Group..."
     az group create \
       --name "$RG_NAME" \
       --output table \
@@ -103,8 +104,8 @@ up() {
 
   az aks wait -g "${RG_NAME}" -n "${AKS_NAME}" --created --interval 2 --timeout 900
 
-  echo "Current Kubernetes nodes:"
-  kubectl get nodes
+  echo "Current AKS clusters:"
+  az aks list -o table
 
   [[ "${cfcontainers:-}" == "1" ]] && {
     echo "- Update nodes to support cgroup swap accounting..."
@@ -119,7 +120,11 @@ up() {
     done
   }
 
+  echo "Get credentials..."
   az aks get-credentials --resource-group $RG_NAME --name $AKS_NAME
+
+  echo "Current Kubernetes nodes:"
+  kubectl get nodes
 }
 
 describe() {
