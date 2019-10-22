@@ -19,10 +19,14 @@ _cluster_name() {
   cat $state_dir/cluster-name
 }
 
+_resource_group_name() {
+  _cluster_name
+}
+
 _setup_env() {
   export SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show --query '{ subscription_id: id }' -o tsv)}"
-  export RG_NAME="rsg-name"
   export AKS_NAME=$(_cluster_name)
+  export RG_NAME=$(_resource_group_name)
   [[ -z "${CLUSTER_REGION:-}" && -z $(az configure -l | jq -r 'map(select(.name == "location"))[0].value // ""') ]] && {
     echo "Please set a default AKS cluster region or provide \$CLUSTER_REGION"
     echo "--> az configure --defaults location=westus2"
@@ -81,6 +85,7 @@ up() {
 
     az group create \
       --name "$RG_NAME" \
+      --output table \
       ${CLUSTER_REGION:+--location "$CLUSTER_REGION"}
 
     echo "Creating AKS cluster..."
@@ -123,9 +128,8 @@ describe() {
 }
 
 down() {
-  _setup_env
-  echo 'Deleting the AKS cluster....'
-  az aks delete --resource-group $RG_NAME --name $AKS_NAME --verbose
+  echo 'Deleting the AKS cluster and resource group....'
+  az group delete --name "$(_resource_group_name)" --verbose
 }
 
 suspend() {
