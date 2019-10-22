@@ -70,13 +70,14 @@ up() {
     echo 'Verify that the Microsoft.Network, Microsoft.Storage, Microsoft.Compute, and Microsoft.ContainerService providers are enabled:'
     provider_json=$(az provider list -o json)
     required_namespaces=(Microsoft.Network Microsoft.Storage Microsoft.Compute Microsoft.ContainerService)
-    missing=
     for namespace in "${required_namespaces[@]}"; do
       status=$(echo "$provider_json" | jq -r --arg namespace "$namespace" '. | map(select(.namespace == $namespace))[0].registrationState // ""')
       echo "--> $namespace: $status"
-      [[ "${status}" == "Registered" ]] || { missing=1; }
+      [[ "${status}" == "Registered" ]] || {
+        echo "    Registering..."
+        az provider register --namespace "$namespace"
+      }
     done
-    [[ "$missing" == "1" ]] && { echo "Please register for required services with Azure."; exit 1; }
 
     az group create \
       --name "$RG_NAME" \
