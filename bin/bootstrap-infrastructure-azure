@@ -37,11 +37,14 @@ _setup_env() {
   }
   az aks get-versions > /dev/null
   export NODE_COUNT=${NODE_COUNT:-3}
+
+  # https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes-general
   #export NODE_VM_SIZE="Standard_DS4_v2" #this size is recommended by suse
+  # Standard_A2m_v2 - 2 cpu, 16G ram, 20G temp storage, 20.6c USD in westus2
   export NODE_VM_SIZE=${NODE_VM_SIZE:-Standard_A2m_v2}
-  # export SSH_KEY_VALUE="~/.ssh/id_rsa.pub"
+
   export ADMIN_USERNAME=${ADMIN_USERNAME:-bootstrap-admin}
-  export NODEPOOL_NAME=${NODEPOOL_NAME:-mypool}
+  # export NODEPOOL_NAME=${NODEPOOL_NAME:-mypool}
 
   export K8S_VERSION=${K8S_VERSION:-$(az aks get-versions ${CLUSTER_REGION:+-l "$CLUSTER_REGION"} | jq -r ".orchestrators | last | .orchestratorVersion")}
 }
@@ -96,7 +99,8 @@ up() {
       --node-count ${NODE_COUNT} \
       --admin-username ${ADMIN_USERNAME} \
       --node-vm-size ${NODE_VM_SIZE} \
-      --node-osdisk-size=80 --nodepool-name ${NODEPOOL_NAME} \
+      --node-osdisk-size=80 \
+      ${NODEPOOL_NAME:+--nodepool-name "$NODEPOOL_NAME"} \
       ${K8S_VERSION:+--kubernetes-version "$K8S_VERSION"} \
       ${DEBUG:+--verbose} \
       ${SSH_KEY_VALUE:+ --ssh-key-value "$SSH_KEY_VALUE"}
