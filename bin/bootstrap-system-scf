@@ -80,7 +80,7 @@ kwt_routing() {
   echo
   echo "Login with:"
   echo "cf login -a https://api.$(_system_domain) --skip-ssl-validation -u admin \\"
-  echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"'
+  echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"'
   echo
   system_domain=$(_system_domain)
   namespace=$(_namespace)

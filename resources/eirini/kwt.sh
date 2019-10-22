@@ -15,7 +15,7 @@ echo "Mapping *.${CF_SYSTEM_DOMAIN} to internal IP ${API_IP}..."
 echo
 echo "Login with:"
 echo "cf login -a https://api.${CF_SYSTEM_DOMAIN} --skip-ssl-validation -u admin \\"
-echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"'
+echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"'
 echo
 # Need to run --dns-map first, so that admin can login first, to allow "cf curl" to work
 sudo -E kwt net start --dns-map ${CF_SYSTEM_DOMAIN}=${API_IP} --namespace scf

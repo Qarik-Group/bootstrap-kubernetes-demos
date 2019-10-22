@@ -167,7 +167,7 @@ In another terminal you can now `cf login` and `cf push` apps:
 
 ```plain
 cf login -a https://api.scf.suse.dev --skip-ssl-validation -u admin \
-   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 -D)"
+   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"
 ```
 
 You can now create organizations, spaces, and deploy applications:
