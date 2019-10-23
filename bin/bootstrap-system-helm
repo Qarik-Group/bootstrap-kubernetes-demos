@@ -2,11 +2,13 @@
 
 set -eu
 
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
 # Install S&W Helm Charts rather than some arbitrary default of nonsense
 export STABLE_REPO_URL=${STABLE_REPO_URL:-https://helm.starkandwayne.com}
 
 # helm-manager can put its state into this project, not its own
-export HELM_MGR_STATE_ROOT=${HELM_MGR_STATE_ROOT:-state/helm}
+export HELM_MGR_STATE_ROOT=${HELM_MGR_STATE_ROOT:-$PWD/state/helm}
 
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
