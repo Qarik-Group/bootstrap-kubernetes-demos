@@ -6,15 +6,26 @@ set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+: "${KRAIL_NAMESPACE:="k-rail"}"
+
 up() {
   (
-    echo "Installing k-rails..."
+    echo "Installing k-rail..."
+    ns=$KRAIL_NAMESPACE
+    echo "--> create ${ns} namespace"
+    cat <<YAML | kubectl apply -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ${ns}
+YAML
+
     echo "--> downloading latest k-rail release..."
     cd $(mktemp -d)
     curl -sL https://api.github.com/repos/cruise-automation/k-rail/releases/latest | jq -r .tarball_url | xargs curl -L | tar xzf -
     cd cruise-automation*/
     echo "--> installing..."
-    helm template --namespace k-rail deploy/helm | kubectl apply -n k-rail -f -
+    helm template --namespace "$ns" deploy/helm | kubectl apply -n "$ns" -f -
   )
 }
 
