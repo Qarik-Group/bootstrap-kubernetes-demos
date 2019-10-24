@@ -94,7 +94,7 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
   clean                       -- cleans up cached state files
 ```
 
-## k-rails to enforce policies
+## k-rail to enforce policies
 
 > [k-rail](https://github.com/cruise-automation/k-rail) is a workload policy enforcement tool for Kubernetes. It can help you secure a multi tenant cluster with minimal disruption and maximum velocity.
 
