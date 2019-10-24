@@ -141,30 +141,6 @@ down() {
   az group delete --name "$(_resource_group_name)" --verbose
 }
 
-suspend() {
-  _setup_env
-  echo 'Supend the AKS cluster vms....'
-  export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-  export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
-  for i in $VM_NODES
-  do
-      echo $i
-      az vm deallocate --resource-group $MC_RG_NAME --name $i --verbose
-  done
-}
-
-resume() {
-  _setup_env
-  echo 'Resume the ASK cluster vms....'
-  MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-  VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
-  for i in $VM_NODES
-  do
-      echo "Restarting node $i..."
-      az vm start --resource-group "$MC_RG_NAME" --name "$i" --verbose
-  done
-}
-
 case "${1:-usage}" in
   failfast)
     shift
@@ -184,16 +160,6 @@ case "${1:-usage}" in
   down)
     shift
     down
-    ;;
-
-  sus|suspend)
-    shift
-    suspend
-    ;;
-
-  repl|restore|restart|resume)
-    shift
-    resume
     ;;
 
   *)
