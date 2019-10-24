@@ -46,7 +46,19 @@ up() {
   discover_versions
   failfast
 
+  ns=$(_namespace)
+
   echo "Install Cloud Foundry/Quarks (cf-operator)"
+  # create scf namespace - helm3 doesn't do this
+  cat <<YAML | kubectl apply -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ${ns}
+      labels:
+        cf-operator-ns: ${ns}
+YAML
+
   # hardcoded at moment for current vendor/cf-operator submodule version
   [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
     release_date=$(aws s3 ls s3://cf-operators/helm-charts/ | grep "$CF_OPERATOR_HELM_FILE" | awk '{print $1}')
@@ -62,7 +74,6 @@ up() {
   # cf-operator versions have + in them; let's encode that as %2B
   CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ//'+'/%2B}
 
-  ns=$(_namespace)
   (
   set -x
   helm upgrade --install --wait --namespace "$ns" \
