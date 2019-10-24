@@ -17,6 +17,7 @@ usage() {
     echo "     [--helm|--tiller]      -- deploys secure Helm"
     echo "     [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini"
     echo "     [--cf-operator]        -- deploys only CF Operator"
+    echo "     [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users"
     echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]             -- deploys Tekton CD"
     echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
@@ -34,6 +35,7 @@ usage() {
 # TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
 _available_systems() {
   echo "
+    k-rail
     helm
     kubeapps
     servicecatalog cf-broker
@@ -120,6 +122,9 @@ case "${1:-usage}" in
         --cf-operator)
           echo 1 > state/systems/helm
           echo 1 > state/systems/cf-operator
+          ;;
+        --k-rail|--krail)
+          echo 1 > state/systems/k-rail
           ;;
         --kpack)
           echo 1 > state/systems/kpack
