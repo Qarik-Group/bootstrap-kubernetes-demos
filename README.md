@@ -74,22 +74,38 @@ But there are many subsystems that can be conveniently deployed after your clust
 $ bootstrap-kubernetes-demos
 Bootstrap Kubernetes and/or subsystems for demonstrations:
   up
-     [--gke|--google]       -- bootstrap new GKE cluster
+     [--gke|--google]       -- bootstrap new Google GKE cluster
+     [--az|--azure]         -- bootstrap new Azure AKE cluster
      [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets
 
+     [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users
      [--helm|--tiller]      -- deploys secure Helm
      [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini
      [--cf-operator]        -- deploys only CF Operator
      [--kpack]              -- deploys kpack to build images with buildpacks
      [--tekton]             -- deploys Tekton CD
      [--knative]            -- deploys Knative Serving/Eventing/Istio
-     [--knative-addr-name name] -- map GCP address to ingress gateway
+     [--rio]                -- deploys Rancher Rio
      [--kubeapp]                -- deploys Kubeapps
      [--service-catalog|--sc]   -- deploys Helm/Service Catalog
      [--cf-broker]              -- deploys Helm/Service Catalog/Cloud Foundry Service Broker
 
   down                        -- destroys cluster, if originally bootstrapped
   clean                       -- cleans up cached state files
+```
+
+## k-rails to enforce policies
+
+> [k-rail](https://github.com/cruise-automation/k-rail) is a workload policy enforcement tool for Kubernetes. It can help you secure a multi tenant cluster with minimal disruption and maximum velocity.
+
+```plain
+bootstrap-kubernetes-demos up --k-rail
+```
+
+To demonstrate the various policies being enforced there is an example bad deployment that will fail to install:
+
+```plain
+bootstrap-system-k-rail example
 ```
 
 ## Helm / Tiller
