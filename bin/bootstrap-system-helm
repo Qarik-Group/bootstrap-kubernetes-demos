@@ -2,7 +2,8 @@
 
 set -eu
 
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+repo_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+cd "$repo_root"
 
 # Install S&W Helm Charts rather than some arbitrary default of nonsense
 export STABLE_REPO_URL=${STABLE_REPO_URL:-https://helm.starkandwayne.com}
@@ -13,36 +14,35 @@ export HELM_MGR_STATE_ROOT=${HELM_MGR_STATE_ROOT:-$PWD/state/helm}
 # helm-manager sets up TLS for tiller; so use `--tls` for all helm commands
 export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 
-cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+_platform() {
+    if [ "$(uname)" == "Darwin" ]; then
+        echo "darwin"
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        echo "linux"
+    fi
+}
 
-failfast() {
-  [[ -d vendor/helm-tiller-manager ]] || {
-    >&2 echo "Fetching missing submodules..."
-    git submodule update --init
-  }
+_ensure_helm3() {
+    version=$(grep "helm-cli" "${repo_root}/.versions" | cut -d= -f2)
+    platform=$(_platform)
+    [[ "$(command -v helm)X" == "X" || "$(helm version | grep "$version")X" == "X" ]] && {
+        echo "installing helm v${version} into ${repo_root}/bin/"
+        (
+        url="https://get.helm.sh/helm-v${version}-${platform}-amd64.tar.gz"
+        cd "$(mktemp -d)"
+        curl -sSL "$url" | tar -xvz "${platform}-amd64/helm"
+        chmod +x "${platform}-amd64/helm"
+        mv "${platform}-amd64/helm" "${repo_root}/bin/"
+        )
+    }
+    printf '' # ensure happy exit regardless of [[ test ]] block
 }
 
 up() {
-  echo "Install/upgrade Tiller Server for Helm"
-  helm-manager up
-  helm repo update
-  [[ "${CREDHUB_BASE_PATH:-X}" != "X" ]] && {
-    echo "Storing helm into credhub ${CREDHUB_BASE_PATH}..."
-    [[ -f $(helm home)/ca.pem ]] && {
-      credhub set -n "${CREDHUB_BASE_PATH}/helm-ca" -t value -v "$(cat "$(helm home)/ca.pem")"
-      credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-cert" -t value -v "$(cat "$(helm home)/cert.pem")"
-      credhub set -n "${CREDHUB_BASE_PATH}/helm-tiller-key" -t value -v "$(cat "$(helm home)/key.pem")"
-    }
-  }
-  exit 0
+  _ensure_helm3
 }
 
 case "${1:-usage}" in
-  failfast)
-    shift
-    failfast "$@"
-    ;;
-
   up)
     shift
     up
