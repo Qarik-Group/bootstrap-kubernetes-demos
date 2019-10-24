@@ -145,7 +145,7 @@ suspend() {
   _setup_env
   echo 'Supend the AKS cluster vms....'
   export MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-  export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+  export VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[].name')
   for i in $VM_NODES
   do
       echo $i
@@ -157,7 +157,7 @@ resume() {
   _setup_env
   echo 'Resume the ASK cluster vms....'
   MC_RG_NAME=$(az aks show --resource-group $RG_NAME --name $AKS_NAME --query nodeResourceGroup --output json | jq -r '.')
-  VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[] | select (.tags.poolName | contains("'$NODEPOOL_NAME'")) | .name')
+  VM_NODES=$(az vm list --resource-group $MC_RG_NAME --output json | jq -r '.[].name')
   for i in $VM_NODES
   do
       echo "Restarting node $i..."
