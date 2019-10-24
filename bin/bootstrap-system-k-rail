@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Deploys k-rail from master/HEAD
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+up() {
+  if [[ -d tmp/k-rail ]]; then
+    ( cd tmp/k-rail; git pull; )
+  else
+    git clone https://github.com/cruise-automation/k-rail tmp/k-rail
+  fi
+  helm template --namespace k-rail tmp/k-rail/deploy/helm | kubectl apply -n k-rail -f -
+}
+
+case "${1:-usage}" in
+  up)
+    shift
+    up
+    ;;
+
+  *)
+    ;;
+esac
+
+
