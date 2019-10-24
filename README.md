@@ -94,6 +94,8 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
 
 ## Helm / Tiller
 
+**Deprecated** - Helm v3 no longer includes Tiller. There is a `helm3` branch of this repo which will stop installing Tiller. It is blocked on some of the other subsystem's still requiring tiller's install hooks.
+
 Helm v2 requires a Kubernetes-running component Tiller. The `bootstrap-kubernetes-demos up --helm` command (and others that depend on Helm for installation) will create Tiller for you.
 
 It will also secure it with generated TLS certificates (stored in `state/` folder, and copied into `~/.helm`).
