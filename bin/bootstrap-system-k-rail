@@ -7,18 +7,31 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 up() {
-  if [[ -d tmp/k-rail ]]; then
-    ( cd tmp/k-rail; git pull; )
-  else
-    git clone https://github.com/cruise-automation/k-rail tmp/k-rail
-  fi
-  helm template --namespace k-rail tmp/k-rail/deploy/helm | kubectl apply -n k-rail -f -
+  (
+    echo "Installing k-rails..."
+    echo "--> downloading latest k-rail release..."
+    cd $(mktemp -d)
+    curl -sL https://api.github.com/repos/cruise-automation/k-rail/releases/latest | jq -r .tarball_url | xargs curl -L | tar xzf -
+    cd cruise-automation*/
+    echo "--> installing..."
+    helm template --namespace k-rail deploy/helm | kubectl apply -n k-rail -f -
+  )
+}
+
+down() {
+  kubectl delete ns k-rail
+  kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io k-rail
 }
 
 case "${1:-usage}" in
   up)
     shift
     up
+    ;;
+
+  down)
+    shift
+    down
     ;;
 
   *)
