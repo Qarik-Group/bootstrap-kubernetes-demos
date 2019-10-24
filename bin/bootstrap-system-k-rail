@@ -1,6 +1,10 @@
 #!/bin/bash
 
-# Deploys k-rail from master/HEAD
+# Deploys k-rail from latest github release
+# https://github.com/cruise-automation/k-rail
+#
+# Try failing deployment example:
+# $ bootstrap-system-k-rail example
 
 set -eu
 
@@ -30,8 +34,25 @@ YAML
 }
 
 down() {
-  kubectl delete ns k-rail
+  kubectl delete ns ${KRAIL_NAMESPACE}
   kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io k-rail
+}
+
+# $ bootstrap-system-k-rail example
+# ingress.extensions/bad-ingress created
+# Error from server (k-rail admission review): error when creating "https://raw.githubusercontent.com/cruise-automation/k-rail/master/deploy/non-compliant-deployment.yaml": admission webhook "k-rail.cruise-automation.github.com" denied the request:
+# Deployment bad-deployment had violation: Host Bind Mounts: host bind mounts are forbidden
+# Deployment bad-deployment had violation: Host Bind Mounts: host bind mounts are forbidden
+# Deployment bad-deployment had violation: Docker Sock Mount: mounting the Docker socket is forbidden
+# Deployment bad-deployment had violation: Immutable Image Reference: image tag must include its sha256 digest
+# Deployment bad-deployment had violation: No Host Network: Using the host network is forbidden
+# Deployment bad-deployment had violation: No Privileged Container: Using privileged containers is forbidden
+# Deployment bad-deployment had violation: No New Capabilities: Adding additional capabilities is forbidden
+# Deployment bad-deployment had violation: No Host PID: Using the host PID namespace is forbidden
+# Deployment bad-deployment had violation: Safe to evict: annotation is required for Pods that use emptyDir or hostPath mounts to enable cluster autoscaling
+# Deployment bad-deployment had violation: Safe to evict: annotation is required for Pods that use emptyDir or hostPath mounts to enable cluster autoscaling
+example() {
+  kubectl apply -f https://raw.githubusercontent.com/cruise-automation/k-rail/master/deploy/non-compliant-deployment.yaml
 }
 
 case "${1:-usage}" in
@@ -43,6 +64,11 @@ case "${1:-usage}" in
   down)
     shift
     down
+    ;;
+
+  example)
+    shift
+    example
     ;;
 
   *)
