@@ -30,6 +30,9 @@ YAML
     cd cruise-automation*/
     echo "--> installing..."
     helm template --namespace "$ns" deploy/helm | kubectl apply -n "$ns" -f -
+
+    echo "--> waiting for k-rail to be active..."
+    kubectl wait pod -n k-rail -l name=k-rail --for condition=Ready
   )
 }
 
