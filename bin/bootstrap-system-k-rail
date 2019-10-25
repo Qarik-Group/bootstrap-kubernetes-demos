@@ -16,13 +16,6 @@ up() {
   (
     echo "Installing k-rail..."
     ns=$KRAIL_NAMESPACE
-    echo "--> create ${ns} namespace"
-    cat <<YAML | kubectl apply -f -
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: ${ns}
-YAML
 
     echo "--> downloading latest k-rail release..."
     cd $(mktemp -d)
