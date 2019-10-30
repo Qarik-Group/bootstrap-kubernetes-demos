@@ -91,7 +91,7 @@ up() {
   echo "---> wait for knative to start"
   (
   set -x
-  kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 30s
+  kubectl wait -l app=controller pod --for condition=Ready -n knative-serving --timeout 300s
   )
 
 
