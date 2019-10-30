@@ -65,7 +65,7 @@ up() {
 
   (
     set -x
-    helm upgrade --install --namespace  "$(_namespace)" \
+    helm upgrade --install --namespace  "$ns" \
       update-all-cf-buildpacks \
       starkandwayne/update-all-cf-buildpacks
   )
