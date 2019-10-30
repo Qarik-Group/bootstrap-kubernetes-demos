@@ -49,7 +49,7 @@ _available_systems() {
 # Ordered list of requested systems
 _requested_systems() {
   for available in $(_available_systems); do
-    for requested in $(find state/systems/* -print0 | xargs -0 basename); do
+    for requested in $(find state/systems/* -print | xargs -L1 basename); do
       [[ "$available" == "$requested" && $(cat "state/systems/${requested}") == "1" ]] && { echo "$requested"; }
     done
   done
