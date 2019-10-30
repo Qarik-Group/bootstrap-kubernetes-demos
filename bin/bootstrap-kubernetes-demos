@@ -74,6 +74,7 @@ failfast() {
 
   # migrate state files after renaming/upgrades
   [[ -f state/systems/scf ]] && { mv state/systems/scf state/systems/kubecf; }
+  printf ""
 }
 
 up() {
