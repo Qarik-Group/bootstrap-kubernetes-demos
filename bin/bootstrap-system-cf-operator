@@ -22,7 +22,7 @@ discover_versions() {
   export CF_OPERATOR_HELM_FILE=${CF_OPERATOR_HELM_FILE:-$(_default_helm_file_version)}
 
   # Install latest from CI/S3 bucket by default
-  export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/release/helm-charts/${CF_OPERATOR_HELM_FILE}"}
+  export CF_OPERATOR_HELM_TGZ=${CF_OPERATOR_HELM_TGZ:-"https://cf-operators.s3.amazonaws.com/helm-charts/${CF_OPERATOR_HELM_FILE}"}
   # Override:
   # [inside path/to/cf-operator]: bin/build-helm
   # [here]:
@@ -49,7 +49,7 @@ up() {
   echo "Install Cloud Foundry/Quarks (cf-operator)"
   # hardcoded at moment for current vendor/cf-operator submodule version
   [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
-    release_date=$(aws s3 ls s3://cf-operators/release/helm-charts/ | grep "$CF_OPERATOR_HELM_FILE" | awk '{print $1}')
+    release_date=$(aws s3 ls s3://cf-operators/helm-charts/ | grep "$CF_OPERATOR_HELM_FILE" | awk '{print $1}')
   }
   echo "--> Using ${CF_OPERATOR_HELM_FILE}${release_date:+ from ${release_date}}"
   # TODO: restore $CFOPERATOR_TAG override if it has a purpose
