@@ -56,7 +56,7 @@ up() {
       scf \
       "$SCF_RELEASE_URL" \
       --set "system_domain=$domain" \
-      --set "features.eirini=true"
+      --set "features.eirini.enabled=true"
   )
 
   echo "Upgrade buildpacks"
