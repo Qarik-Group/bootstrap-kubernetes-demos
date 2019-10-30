@@ -17,7 +17,7 @@ usage() {
     echo "     [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users"
     echo "     [--helm|--tiller]      -- deploys secure Helm Tiller (deprecated)"
     echo ""
-    echo "     [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini"
+    echo "     [--cf|--kubecf|--eirini] -- deploys Cloud Foundry/Eirini"
     echo "     [--cf-operator]        -- deploys only CF Operator"
     echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]             -- deploys Tekton CD"
@@ -40,7 +40,7 @@ _available_systems() {
     helm
     kubeapps
     servicecatalog cf-broker
-    cf-operator scf
+    cf-operator kubecf
     kpack tekton knative
     rio
   "
@@ -72,6 +72,8 @@ failfast() {
   [[ -n "$(cat "${errors_file}")" ]] && { exit 1; }
   set -e
 
+  # migrate state files after renaming/upgrades
+  [[ -f state/systems/scf ]] && { mv state/systems/scf state/systems/kubecf; }
 }
 
 up() {
@@ -115,10 +117,10 @@ case "${1:-usage}" in
         #   echo 1 > state/systems/cfcontainers
         #   echo 1 > state/systems/helm
         #   ;;
-        --cf|--scf|--eirini)
+        --kubecf|--cf|--scf|--eirini)
           echo 1 > state/systems/helm
           echo 1 > state/systems/cf-operator
-          echo 1 > state/systems/scf
+          echo 1 > state/systems/kubecf
           ;;
         --cf-operator)
           echo 1 > state/systems/helm
