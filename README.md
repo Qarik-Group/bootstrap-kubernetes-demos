@@ -5,8 +5,8 @@ It is great to have a single tool to bring up a Kubernetes cluster, and install 
 ## Basic Usage
 
 ```plain
-bootstrap-kubernetes-demos up --google --kpack --knative
-bootstrap-kubernetes-demos up --google --scf
+bootstrap-kubernetes-demos up --google --kubecf
+bootstrap-kubernetes-demos up --azure --knative --kpack
 ```
 
 Later, to discard the cluster (if it was bootstrap by this tool):
@@ -130,6 +130,8 @@ To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `-
 
 ```plain
 bootstrap-kubernetes-demos up --cf
+bootstrap-kubernetes-demos up --google --cf
+bootstrap-kubernetes-demos up --azure --cf
 ```
 
 You can override some defaults by setting the following environment variables before running the command above:
