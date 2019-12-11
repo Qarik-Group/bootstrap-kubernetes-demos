@@ -1,0 +1,96 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+_cluster_name() {
+  [[ -f state/digitalocean/cluster-name ]] || {
+    mkdir -p state/digitalocean
+    : ${CLUSTER_NAME:="$(whoami)-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 6)"}
+    echo "$CLUSTER_NAME" > state/digitalocean/cluster-name
+  }
+  cat state/digitalocean/cluster-name
+}
+
+failfast() {
+  [[ "$(command -v doctl)X" != "X" ]] || {
+    echo "ERROR: missing 'doctl' CLI from \$PATH" >> $1
+    echo "---> Please install Digital Ocean CLI from https://github.com/digitalocean/doctl" >> $1
+  }
+}
+
+clusterStatus() {
+  result=$(doctl kubernetes cluster get "$(_cluster_name)" -o json)
+  # valid result is an [] array; an error is a {} object
+  [[ "${result:0:1}" == "[" ]] && {
+    echo "$result" | jq -r --arg name "$(_cluster_name)" \
+      '. | map(select(.name == $name))[0].status.state // ""'
+  }
+  exit 0
+}
+
+up() {
+  [[ -z "$(clusterStatus)" ]] && {
+    echo "Creating Digital Ocean cluster $(_cluster_name)..."
+    doctl kubernetes cluster create "$(_cluster_name)" \
+      --auto-upgrade \
+      --node-pool "name=default;size=s-1vcpu-2gb;count=2;auto-scale=true;min-nodes=2;max-nodes=5"
+  }
+
+  status=$(clusterStatus)
+  [[ "$status" != "running" ]] && { echo "Waiting for cluster $(_cluster_name), current status $status"; }
+  while [[ "$status" != "running" ]]; do
+    sleep 5
+    status=$(clusterStatus)
+  done
+
+  doctl kubernetes cluster kubeconfig save "$(_cluster_name)"
+
+  # kubectl create clusterrolebinding cluster-admin-binding \
+  #   --clusterrole=cluster-admin \
+  #   --user="$(gcloud config get-value core/account)" \
+  #   --dry-run=true -o yaml | kubectl apply -f -
+
+  exit 0
+}
+
+describe() {
+  doctl kubernetes cluster get "$(_cluster_name)"
+}
+
+down() {
+  [[ -f state/digitalocean/cluster-name ]] || { echo "No record of provisioned cluster."; exit 1; }
+  doctl kubernetes cluster delete "$(_cluster_name)" --force
+}
+
+
+case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
+  up)
+    shift
+    up
+    ;;
+
+  describe)
+    shift
+    describe
+    ;;
+
+  status)
+    shift
+    clusterStatus
+    ;;
+
+  down)
+    shift
+    down
+    ;;
+
+  *)
+    ;;
+esac

@@ -2,11 +2,18 @@
 
 It is great to have a single tool to bring up a Kubernetes cluster, and install one or more demonstration/development/experimentation systems.
 
+New Kubernetes clusters can be provisioned on:
+
+* Google Kubernetes Engine (GKE)
+* Azure Container Service (AKS)
+* DigitalOcean Kubernetes
+
 ## Basic Usage
 
 ```plain
 bootstrap-kubernetes-demos up --google --kubecf
 bootstrap-kubernetes-demos up --azure --knative --kpack
+bootstrap-kubernetes-demos up --digitalocean
 ```
 
 Later, to discard the cluster (if it was bootstrap by this tool):

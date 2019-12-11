@@ -12,6 +12,7 @@ usage() {
     echo "  up"
     echo "     [--gke|--google]       -- bootstrap new Google GKE cluster"
     echo "     [--az|--azure]         -- bootstrap new Azure AKE cluster"
+    echo "     [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster"
     echo "     [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets"
     echo ""
     echo "     [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users"
@@ -112,6 +113,9 @@ case "${1:-usage}" in
           ;;
         --az|--azure)
           echo "azure" > state/infrastructure
+          ;;
+        --do|--digitalocean)
+          echo "digitalocean" > state/infrastructure
           ;;
         # --cfcontainers)
         # Is this section really for Diego for SCF?
