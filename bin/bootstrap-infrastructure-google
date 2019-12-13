@@ -19,6 +19,7 @@ _setup_env() {
   export CLUSTER_ZONE="${CLUSTER_ZONE:-$(gcloud config get-value compute/zone)}"
   export CLUSTER_VERSION="${CLUSTER_VERSION:-latest}"
   export MACHINE_TYPE="${MACHINE_TYPE:-n1-standard-2}"
+  export RELEASE_CHANNEL="${RELEASE_CHANNEL:-rapid}"
 }
 
 failfast() {
@@ -56,6 +57,7 @@ up() {
     }
     gcloud container clusters create "$(_cluster_name)" \
       --region="$CLUSTER_ZONE" \
+      --release-channel="${RELEASE_CHANNEL}" \
       --cluster-version="${CLUSTER_VERSION}" \
       --machine-type="${MACHINE_TYPE}" \
       --enable-autoscaling --min-nodes=1 --max-nodes=5 \
