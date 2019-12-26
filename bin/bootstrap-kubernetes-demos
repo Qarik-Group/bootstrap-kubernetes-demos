@@ -13,8 +13,8 @@ usage() {
     echo "     [--gke|--google]       -- bootstrap new Google GKE cluster"
     echo "     [--az|--azure]         -- bootstrap new Azure AKE cluster"
     echo "     [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster"
-    echo "     [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets"
     echo ""
+    echo "     [--cert-manager]       -- deploys cert-manager"
     echo "     [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users"
     echo "     [--helm|--tiller]      -- deploys secure Helm Tiller (deprecated)"
     echo ""
@@ -37,6 +37,7 @@ usage() {
 # TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
 _available_systems() {
   echo "
+    cert-manager
     k-rail
     helm
     kubeapps
@@ -130,6 +131,9 @@ case "${1:-usage}" in
         --cf-operator)
           echo 1 > state/systems/helm
           echo 1 > state/systems/cf-operator
+          ;;
+        --cert-manager)
+          echo 1 > state/systems/cert-manager
           ;;
         --k-rail|--krail)
           echo 1 > state/systems/k-rail
