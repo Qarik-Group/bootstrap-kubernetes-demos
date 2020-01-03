@@ -8,10 +8,10 @@ export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _namespace() {
-  [[ -f state/configuration/scf-namespace ]] || {
-    echo "${CF_NAMESPACE:-scf}" > state/configuration/scf-namespace
+  [[ -f state/configuration/kubecf-namespace ]] || {
+    echo "${CF_NAMESPACE:-kubecf}" > state/configuration/kubecf-namespace
   }
-  cat state/configuration/scf-namespace
+  cat state/configuration/kubecf-namespace
 }
 
 _default_helm_file_version() {
