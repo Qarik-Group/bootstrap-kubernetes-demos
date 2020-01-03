@@ -5,58 +5,86 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _system_domain() {
-  [[ -f state/configuration/scf-system-domain ]] || {
-    echo "${CF_SYSTEM_DOMAIN:-scf.suse.dev}" > state/configuration/scf-system-domain
+  [[ -f state/configuration/kubecf-system-domain ]] || {
+    echo "${CF_SYSTEM_DOMAIN:-kubecf.dev}" > state/configuration/kubecf-system-domain
   }
-  cat state/configuration/scf-system-domain
+  cat state/configuration/kubecf-system-domain
 }
 
 _namespace() {
-  [[ -f state/configuration/scf-namespace ]] || {
-    echo "${CF_NAMESPACE:-scf}" > state/configuration/scf-namespace
+  [[ -f state/configuration/kubecf-namespace ]] || {
+    echo "${CF_NAMESPACE:-kubecf}" > state/configuration/kubecf-namespace
   }
-  cat state/configuration/scf-namespace
+  cat state/configuration/kubecf-namespace
 }
 
 _default_helm_file_version() {
-  grep "scf-helm-file" .versions | cut -d= -f2
+  grep "kubecf-helm-file" .versions | cut -d= -f2
+}
+
+_values_file() {
+  mkdir -p state/configuration/kubecf
+  printf "state/configuration/kubecf/values.yaml"
 }
 
 discover_versions() {
-  export SCF_RELEASE_FILE=${SCF_RELEASE_FILE:-$(_default_helm_file_version)}
+  export KUBECF_RELEASE_FILE=${KUBECF_RELEASE_FILE:-$(_default_helm_file_version)}
 
   # Install latest from CI/S3 bucket by default
-  # Usage: SCF_RELEASE_URL=path/to/scf/bazel-bin/deploy/helm/scf/scf-3.0.0.tgz
-  : "${SCF_RELEASE_URL:=}"
+  # Usage: KUBECF_RELEASE_URL=path/to/kubecf/bazel-bin/deploy/helm/kubecf/kubecf-3.0.0.tgz
+  : "${KUBECF_RELEASE_URL:=}"
 }
 
 failfast() {
   # aws cli not current required for all code paths
-  # [[ "$(command -v aws)X" != "X" ]] || { echo "ERROR: missing 'aws' CLI so we can look up latest scf release from S3 bucket" >> $1; }
+  # [[ "$(command -v aws)X" != "X" ]] || { echo "ERROR: missing 'aws' CLI so we can look up latest kubecf release from S3 bucket" >> $1; }
   printf ""
 }
 
 up() {
   discover_versions
   failfast
-  echo "Install Cloud Foundry/Eirini (scf) for $(_system_domain)"
-  [[ "${SCF_RELEASE_URL:-X}" == "X" ]] && {
-    # Try to look up its date from s3 bucket, if aws CLI available and configured
-    [[ "$(command -v aws)X" != "X" && -f ~/.aws/credentials ]] && {
-      release_date=$(aws s3 ls s3://scf-v3/ | grep "$SCF_RELEASE_FILE" | awk '{print $1}')
-    }
-    echo "--> Using ${SCF_RELEASE_FILE}${release_date:+ from ${release_date}}"
-    SCF_RELEASE_URL="https://scf-v3.s3.amazonaws.com/${SCF_RELEASE_FILE}"
+  echo "Install Cloud Foundry/Eirini (kubecf) for $(_system_domain)"
+  [[ "${KUBECF_RELEASE_URL:-X}" == "X" ]] && {
+    KUBECF_RELEASE_URL="https://github.com/SUSE/kubecf/releases/download/${KUBECF_RELEASE_FILE}"
   }
+  [[ -f $(_values_file) ]] || {
+    echo "Creating initial $(_values_file)"
+    cat > create state/configuration/kubecf/values.yaml <<YAML
+system_domain: $(_system_domain)
+
+features:
+  eirini:
+    enabled: true
+  ingress:
+    enabled: true
+
+services:
+  router:
+    externalIPs:
+    - 35.214.153.155
+  ssh-proxy:
+    externalIPs:
+    - 35.214.130.126
+  tcp-router:
+    externalIPs:
+    - 35.214.205.136
+
+kube:
+  pod_cluster_ip_range: 10.48.0.0
+  service_cluster_ip_range: 10.52.0.0
+YAML
+  }
+
+  echo "--> Using ${KUBECF_RELEASE_URL}"
   ns=$(_namespace)
-  domain=$(_system_domain)
+  values_file=$(_values_file)
   (
     set -x
     helm upgrade --install --namespace "$ns" \
-      scf \
-      "$SCF_RELEASE_URL" \
-      --set "system_domain=$domain" \
-      --set "features.eirini.enabled=true"
+      kubecf \
+      "$KUBECF_RELEASE_URL" \
+      --values $values_file
   )
 
   echo "Upgrade buildpacks"
@@ -74,13 +102,13 @@ up() {
 kwt_routing() {
   [[ "$(command -v kwt)X" != "X" ]] || { echo "ERROR: install 'kwt'"; exit 1; }
 
-  api_ip=$(kubectl get svc -n "$(_namespace)" scf-router-0 --template '{{.spec.clusterIP}}')
+  api_ip=$(kubectl get svc -n "$(_namespace)" kubecf-router-0 --template '{{.spec.clusterIP}}')
 
   echo "Mapping *.$(_system_domain) to internal IP ${api_ip}..."
   echo
   echo "Login with:"
   echo "cf login -a https://api.$(_system_domain) --skip-ssl-validation -u admin \\"
-  echo '   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"'
+  echo '   -p "$(kubectl get secret -n kubecf kubecf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"'
   echo
   system_domain=$(_system_domain)
   namespace=$(_namespace)

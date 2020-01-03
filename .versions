@@ -1,4 +1,4 @@
-scf-helm-file=scf-3.0.0-c656daa.tgz
+kubecf-helm-file=v0.1.0/kubecf-0.1.0-002b49a.tgz
 cf-operator-helm-file=cf-operator-v1.0.0-1.g424dd0b3.tgz
 knative-serving=0.9.0
 knative-istio-major=1.3
