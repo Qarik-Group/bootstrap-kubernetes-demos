@@ -50,7 +50,11 @@ up() {
   }
   [[ -f $(_values_file) ]] || {
     echo "Creating initial $(_values_file)"
-    cat > create state/configuration/kubecf/values.yaml <<YAML
+    mkdir -p state/configuration/kubecf
+    echo "--> looking up CIDRs"
+    pod_cluster_ip_range=$(./resources/cluster-cidr.rb)
+    service_cluster_ip_range=$(./resources/service-cluster-cidr.rb)
+    cat > state/configuration/kubecf/values.yaml <<YAML
 system_domain: $(_system_domain)
 
 features:
@@ -71,8 +75,8 @@ services:
     - 35.214.205.136
 
 kube:
-  pod_cluster_ip_range: 10.48.0.0
-  service_cluster_ip_range: 10.52.0.0
+  pod_cluster_ip_range: ${pod_cluster_ip_range}
+  service_cluster_ip_range: ${service_cluster_ip_range}
 YAML
   }
 
