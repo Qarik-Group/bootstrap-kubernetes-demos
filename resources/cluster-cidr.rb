@@ -9,4 +9,4 @@ elsif file == "-"
 else
   contents = open(file).read
 end
-puts contents.scan(/cluster-cidr=([\w\d.]*)/).flatten.first
+puts contents.scan(/cluster-cidr=([\w\d.\/]*)/).flatten.first
