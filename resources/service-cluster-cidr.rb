@@ -6,4 +6,4 @@ svc = JSON.parse(`kubectl get services -n kube-system -ojson`)
 clusterIPService = svc["items"].find {|i| i["spec"]["type"] == "ClusterIP"}
 ip = clusterIPService["spec"]["clusterIP"]
 
-puts "#{ip[/^(\d+)\.(\d+)/]}.0.0"
+puts "#{ip[/^(\d+)\.(\d+)/]}.0.0/16"
