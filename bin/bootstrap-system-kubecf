@@ -65,14 +65,11 @@ features:
 
 services:
   router:
-    externalIPs:
-    - 35.214.153.155
+    externalIPs: []
   ssh-proxy:
-    externalIPs:
-    - 35.214.130.126
+    externalIPs: []
   tcp-router:
-    externalIPs:
-    - 35.214.205.136
+    externalIPs: []
 
 kube:
   pod_cluster_ip_range: ${pod_cluster_ip_range}
