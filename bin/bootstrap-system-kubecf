@@ -18,8 +18,8 @@ _namespace() {
   cat state/configuration/kubecf-namespace
 }
 
-_default_helm_file_version() {
-  grep "kubecf-helm-file" .versions | cut -d= -f2
+_default_version() {
+  grep "kubecf" .versions | cut -d= -f2
 }
 
 _values_file() {
@@ -28,8 +28,6 @@ _values_file() {
 }
 
 discover_versions() {
-  export KUBECF_RELEASE_FILE=${KUBECF_RELEASE_FILE:-$(_default_helm_file_version)}
-
   # Install latest from CI/S3 bucket by default
   # Usage: KUBECF_RELEASE_URL=path/to/kubecf/bazel-bin/deploy/helm/kubecf/kubecf-3.0.0.tgz
   : "${KUBECF_RELEASE_URL:=}"
@@ -46,7 +44,7 @@ up() {
   failfast
   echo "Install Cloud Foundry/Eirini (kubecf) for $(_system_domain)"
   [[ "${KUBECF_RELEASE_URL:-X}" == "X" ]] && {
-    KUBECF_RELEASE_URL="https://github.com/SUSE/kubecf/releases/download/${KUBECF_RELEASE_FILE}"
+    KUBECF_RELEASE_URL="https://github.com/SUSE/kubecf/releases/download/v$(_default_version)/kubecf-$(_default_version).tgz"
   }
   [[ -f $(_values_file) ]] || {
     echo "Creating initial $(_values_file)"
