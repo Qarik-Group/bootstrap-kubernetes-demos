@@ -1,3 +1,0 @@
-[submodule "vendor/helm-tiller-manager"]
-	path = vendor/helm-tiller-manager
-	url = https://github.com/starkandwayne/helm-tiller-manager
