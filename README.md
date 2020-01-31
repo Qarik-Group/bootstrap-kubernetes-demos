@@ -7,6 +7,7 @@ New Kubernetes clusters can be provisioned on:
 * Google Kubernetes Engine (GKE)
 * Azure Container Service (AKS)
 * DigitalOcean Kubernetes
+* Minikube
 
 ## Basic Usage
 
@@ -14,6 +15,7 @@ New Kubernetes clusters can be provisioned on:
 bootstrap-kubernetes-demos up --google --kubecf
 bootstrap-kubernetes-demos up --azure --knative --kpack
 bootstrap-kubernetes-demos up --digitalocean
+bootstrap-kubernetes-demos up --minikube --cert-manager
 ```
 
 Later, to discard the cluster (if it was bootstrap by this tool):
