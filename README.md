@@ -83,11 +83,13 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
   up
      [--gke|--google]       -- bootstrap new Google GKE cluster
      [--az|--azure]         -- bootstrap new Azure AKE cluster
-     [--credhub-store path] -- store GKE cluster into Credhub path/to/secrets
+     [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster
 
+     [--cert-manager]       -- deploys cert-manager
      [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users
-     [--helm|--tiller]      -- deploys secure Helm
-     [--cf|--scf|--eirini]  -- deploys Cloud Foundry/Eirini
+     [--helm|--tiller]      -- deploys secure Helm Tiller (deprecated)
+
+     [--cf|--kubecf|--eirini] -- deploys Cloud Foundry/Eirini
      [--cf-operator]        -- deploys only CF Operator
      [--kpack]              -- deploys kpack to build images with buildpacks
      [--tekton]             -- deploys Tekton CD
@@ -133,10 +135,10 @@ Put that in your `.profile` for all terminal sessions.
 
 ## Cloud Foundry / Eirini / Quarks
 
-To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--scf`, or `--eirini` flags):
+To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--kubecf`, or `--eirini` flags):
 
 ```plain
-bootstrap-kubernetes-demos up --cf
+bootstrap-kubernetes-demos up --kubecf
 bootstrap-kubernetes-demos up --google --cf
 bootstrap-kubernetes-demos up --azure --cf
 ```
@@ -144,13 +146,13 @@ bootstrap-kubernetes-demos up --azure --cf
 You can override some defaults by setting the following environment variables before running the command above:
 
 ```bash
-: ${CF_SYSTEM_DOMAIN:=scf.suse.dev}
-: ${CF_NAMESPACE:=scf}
+: ${CF_SYSTEM_DOMAIN:=kubecf.dev}
+: ${CF_NAMESPACE:=kubecf}
 ```
 
 Your Cloud Foundry Buildpacks will be automatically updated to the latest from GitHub, and each day a cronjob will run to update them again.
 
-### Access to SCF
+### Access to KubeCF
 
 Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. Nor will it ever set up your public DNS to map to your Cloud Foundry ingress/router.
 
@@ -172,18 +174,18 @@ chmod +x kwt-linux-amd64 && sudo mv kwt-linux-amd64 /usr/local/bin/kwt
 Run the helper script to configure and run `kwt net start` proxy services:
 
 ```plain
-bootstrap-system-scf kwt
+bootstrap-system-kubecf kwt
 ```
 
 Provide your sudo root password at the prompt.
 
-The `kwt net start` command launches a new pod `kwt-net` in the `scf` namespace, which is used to proxy your traffic into the cluster.
+The `kwt net start` command launches a new pod `kwt-net` in the `kubecf` namespace, which is used to proxy your traffic into the cluster.
 
 The `kwt` proxy is ready when the output looks similar to:
 
 ```plain
 ...
-07:17:27AM: info: KubeEntryPoint: Waiting for networking pod 'kwt-net' in namespace 'scf' to start...
+07:17:27AM: info: KubeEntryPoint: Waiting for networking pod 'kwt-net' in namespace 'kubecf' to start...
 ...
 07:17:47AM: info: ForwardingProxy: Ready!
 ```
@@ -193,8 +195,8 @@ The `kwt` proxy is ready when the output looks similar to:
 In another terminal you can now `cf login` and `cf push` apps:
 
 ```plain
-cf login -a https://api.scf.suse.dev --skip-ssl-validation -u admin \
-   -p "$(kubectl get secret -n scf scf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"
+cf login -a https://api.kubecf.suse.dev --skip-ssl-validation -u admin \
+   -p "$(kubectl get secret -n kubecf kubecf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"
 ```
 
 You can now create organizations, spaces, and deploy applications:
@@ -337,13 +339,13 @@ The first argument to `bootstrap-system-knative kwt` is the namespace when you a
 
 Provide your sudo root password at the prompt.
 
-The `kwt net start` command launches a new pod `kwt-net` in the `scf` namespace, which is used to proxy your traffic into the cluster.
+The `kwt net start` command launches a new pod `kwt-net` in the `kubecf` namespace, which is used to proxy your traffic into the cluster.
 
 The `kwt` proxy is ready when the output looks similar to:
 
 ```plain
 ...
-07:17:27AM: info: KubeEntryPoint: Waiting for networking pod 'kwt-net' in namespace 'scf' to start...
+07:17:27AM: info: KubeEntryPoint: Waiting for networking pod 'kwt-net' in namespace 'kubecf' to start...
 ...
 07:17:47AM: info: ForwardingProxy: Ready!
 ```
