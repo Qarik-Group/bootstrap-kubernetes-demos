@@ -1,4 +1,4 @@
-helm-cli=3.0.0-beta.5
+helm-cli=3.0.3
 kubecf=0.2.0
 cf-operator-helm-file=cf-operator-v2.0.0-0.g0142d1e9.tgz
 knative-serving=0.9.0
