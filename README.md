@@ -39,6 +39,16 @@ direnv allow
 export PATH=$PWD/bin:$PWD/vendor/helm-tiller-manager/bin:$PATH
 ```
 
+## Minikube
+
+First, install Minikube.
+
+To start Minikube, plus additional subsystems:
+
+```plain
+bootstrap-kubernetes-demos up --minikube
+```
+
 ## Google Cloud
 
 Login to Google Cloud:
@@ -81,6 +91,7 @@ But there are many subsystems that can be conveniently deployed after your clust
 $ bootstrap-kubernetes-demos
 Bootstrap Kubernetes and/or subsystems for demonstrations:
   up
+     [--minikube|--local]   -- bootstrap Minikube
      [--gke|--google]       -- bootstrap new Google GKE cluster
      [--az|--azure]         -- bootstrap new Azure AKE cluster
      [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster
