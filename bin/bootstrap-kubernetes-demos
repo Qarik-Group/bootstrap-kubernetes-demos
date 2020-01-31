@@ -10,6 +10,7 @@ touch state/systems/zzz-ignoreme
 usage() {
     echo "Bootstrap Kubernetes and/or subsystems for demonstrations:"
     echo "  up"
+    echo "     [--minikube|--local]   -- bootstrap Minikube"
     echo "     [--gke|--google]       -- bootstrap new Google GKE cluster"
     echo "     [--az|--azure]         -- bootstrap new Azure AKE cluster"
     echo "     [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster"
@@ -109,6 +110,9 @@ case "${1:-usage}" in
     shift
     while [[ $# -gt 0 ]]; do
       case "${1:-}" in
+        --local|--minikube)
+          echo "minikube" > state/infrastructure
+          ;;
         --gke|--google)
           echo "google" > state/infrastructure
           ;;

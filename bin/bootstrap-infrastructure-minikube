@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -eu
+
+cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+failfast() {
+  [[ "$(command -v minikube)X" != "X" ]] || {
+    echo "ERROR: missing 'minikube' CLI from \$PATH" >> $1
+  }
+}
+
+clusterStatus() {
+  minikube status | grep "host:" | awk '{print $2}'
+}
+
+up() {
+  [[ "$(clusterStatus)" == "Stopped" ]] && {
+    echo "Starting Minikube..."
+    minikube start
+  }
+
+  status=$(clusterStatus)
+  [[ "$status" == "Stopping" ]] && { echo "Cluster stopping. Wait until its finished, or try a new \$CLUSTER_NAME"; exit 1; }
+  [[ "$status" != "Running" ]] && { echo "Waiting for cluster, current status $status"; }
+  while [[ "$status" != "Running" ]]; do
+    sleep 5
+    status=$(clusterStatus)
+  done
+
+  minikube update-context
+
+  exit 0
+}
+
+describe() {
+  minikube status
+}
+
+down() {
+  minikube stop
+}
+
+
+case "${1:-usage}" in
+  failfast)
+    shift
+    failfast "$@"
+    ;;
+
+  up)
+    shift
+    up
+    ;;
+
+  describe)
+    shift
+    describe
+    ;;
+
+  down)
+    shift
+    down
+    ;;
+
+  *)
+    ;;
+esac
