@@ -24,6 +24,7 @@ usage() {
     echo "     [--kpack]              -- deploys kpack to build images with buildpacks"
     echo "     [--tekton]             -- deploys Tekton CD"
     echo "     [--knative]            -- deploys Knative Serving/Eventing/Istio"
+    echo "     [--rancher]            -- deploys Rancher"
     echo "     [--rio]                -- deploys Rancher Rio"
     # echo "     [--knative-addr-name name] -- map GCP address to ingress gateway"
     echo "     [--kubeapp]                -- deploys Kubeapps"
@@ -45,7 +46,7 @@ _available_systems() {
     servicecatalog cf-broker
     cf-operator kubecf
     kpack tekton knative
-    rio
+    rio rancher
   "
 }
 
@@ -150,6 +151,11 @@ case "${1:-usage}" in
           ;;
         --knative)
           echo 1 > state/systems/knative
+          ;;
+        --rancher)
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/cert-manager
+          echo 1 > state/systems/rancher
           ;;
         --rio)
           echo 1 > state/systems/rio
