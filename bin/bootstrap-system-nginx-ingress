@@ -5,28 +5,22 @@ set -eu
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _namespace() {
-  printf "cattle-system"
-}
-
-_hostname() {
-  printf "rancher.mydev"
+  printf "kube-system"
 }
 
 up() {
-  echo "Install/upgrade Rancher via Helm"
-  helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
-  kubectl create namespace cattle-system || { echo '-> continuing...'; }
-  helm upgrade --install rancher rancher-latest/rancher \
-    --namespace "$(_namespace)" \
-    --set ingress.tls.source=rancher \
-    --set hostname="$(_hostname)"
-  kubectl -n "$(_namespace)" rollout status deploy/rancher
+  echo "Install/upgrade Nginx Ingress via Helm"
+  helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+  helm repo update
+  helm upgrade --install nginx-ingress stable/nginx-ingress \
+    --namespace "$(_namespace)"
+  kubectl -n "$(_namespace)" rollout status deploy/nginx-ingress-controller
 }
 
 down() {
   namespace=$(_namespace)
   set +x
-  helm delete rancher -n "$(_namespace)"
+  helm delete nginx-ingress -n "$(_namespace)"
 }
 
 kwt_routing() {
