@@ -10,9 +10,9 @@ up() {
   kubectl create namespace cattle-system || { echo '-> continuing...'; }
   helm upgrade --install rancher rancher-latest/rancher \
     --namespace cattle-system \
-    --wait \
     --set ingress.tls.source=rancher \
     --set hostname=rancher.dev
+  kubectl -n cattle-system rollout status deploy/rancher
 }
 
 case "${1:-usage}" in
