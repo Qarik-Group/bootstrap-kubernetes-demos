@@ -9,7 +9,11 @@ _namespace() {
 }
 
 _hostname() {
-  printf "rancher.mydev"
+  if [[ -f state/configuration/ingress-domain ]]; then
+    echo "rancher.$(cat state/configuration/ingress-domain)"
+  else
+    echo "rancher.mydev"
+  fi
 }
 
 up() {
