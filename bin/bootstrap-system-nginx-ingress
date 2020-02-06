@@ -17,6 +17,11 @@ up() {
     --namespace "$(_namespace)" \
     --set controller.publishService.enabled=true
   kubectl -n "$(_namespace)" rollout status deploy/nginx-ingress-controller
+
+  # TODO: block until LoadBalancer has now been created
+  ingress_external_ip=$(kubectl get service -n kube-system nginx-ingress-controller -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo "${ingress_external_ip}" > state/configuration/ingress-external-ip
+  echo "${ingress_external_ip}.xip.io" > state/configuration/ingress-domain
 }
 
 down() {
