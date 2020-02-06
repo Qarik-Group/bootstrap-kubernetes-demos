@@ -4,21 +4,53 @@ set -eu
 
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
+_namespace() {
+  printf "cattle-system"
+}
+
+_hostname() {
+  printf "rancher.mydev"
+}
+
 up() {
   echo "Install/upgrade Rancher via Helm"
   helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
   kubectl create namespace cattle-system || { echo '-> continuing...'; }
   helm upgrade --install rancher rancher-latest/rancher \
-    --namespace cattle-system \
+    --namespace "$(_namespace)" \
     --set ingress.tls.source=rancher \
-    --set hostname=rancher.dev
+    --set hostname="$(_hostname)"
   kubectl -n cattle-system rollout status deploy/rancher
+}
+
+down() {
+  namespace=$(_namespace)
+  set +x
+  helm delete rancher -n cattle-system
+}
+
+kwt_routing() {
+  [[ "$(command -v kwt)X" != "X" ]] || { echo "ERROR: install 'kwt'"; exit 1; }
+
+  api_ip=$(kubectl get svc -n "$(_namespace)" rancher --template '{{.spec.clusterIP}}')
+
+  echo "Mapping https://$(_hostname) to internal IP ${api_ip}..."
+  echo
+  hostname=$(_hostname)
+  namespace=$(_namespace)
+  set -x
+  sudo -E kwt net start --dns-map "${hostname}=${api_ip}" --namespace "$namespace"
 }
 
 case "${1:-usage}" in
   up)
     shift
     up
+    ;;
+
+  kwt)
+    shift
+    kwt_routing
     ;;
 
   *)
