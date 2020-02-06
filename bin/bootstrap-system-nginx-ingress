@@ -9,17 +9,25 @@ _namespace() {
 }
 
 up() {
+  # https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nginx-ingress-on-digitalocean-kubernetes-using-helm
+
   echo "Install/upgrade Nginx Ingress via Helm"
   helm repo add stable https://kubernetes-charts.storage.googleapis.com/
   helm repo update
-  # https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nginx-ingress-on-digitalocean-kubernetes-using-helm
   helm upgrade --install nginx-ingress stable/nginx-ingress \
     --namespace "$(_namespace)" \
     --set controller.publishService.enabled=true
+  echo "-- waiting for ingress controller"
   kubectl -n "$(_namespace)" rollout status deploy/nginx-ingress-controller
 
-  # TODO: block until LoadBalancer has now been created
+  echo "-- waiting for ingress load balancer"
   ingress_external_ip=$(kubectl get service -n kube-system nginx-ingress-controller -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  while [[ "${ingress_external_ip:-X}" == "X" ]]; do
+    printf "."
+    sleep 5
+    ingress_external_ip=$(kubectl get service -n kube-system nginx-ingress-controller -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  done
+
   echo "${ingress_external_ip}" > state/configuration/ingress-external-ip
   echo "${ingress_external_ip}.xip.io" > state/configuration/ingress-domain
 }
