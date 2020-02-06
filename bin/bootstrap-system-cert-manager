@@ -21,6 +21,10 @@ up() {
     echo "Installing cert-manager v$VERSION..."
     set -x
     kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v$VERSION/cert-manager.yaml
+
+    kubectl rollout status -n cert-manager deployment/cert-manager
+    kubectl rollout status -n cert-manager deployment/cert-manager-cainjector
+    kubectl rollout status -n cert-manager deployment/cert-manager-webhook
   )
 }
 
