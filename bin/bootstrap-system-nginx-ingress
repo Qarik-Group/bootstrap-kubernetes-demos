@@ -30,6 +30,8 @@ up() {
 
   echo "${ingress_external_ip}" > state/configuration/ingress-external-ip
   echo "${ingress_external_ip}.xip.io" > state/configuration/ingress-domain
+
+  echo
 }
 
 down() {
