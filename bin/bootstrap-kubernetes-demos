@@ -124,6 +124,8 @@ case "${1:-usage}" in
           ;;
         --do|--digitalocean)
           echo "digitalocean" > state/infrastructure
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/nginx-ingress
           ;;
 
         --ingress|--nginx-ingress)
