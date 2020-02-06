@@ -15,6 +15,7 @@ usage() {
     echo "     [--az|--azure]         -- bootstrap new Azure AKE cluster"
     echo "     [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster"
     echo ""
+    echo "     [--ingress|--nginx-ingress] -- deploys Nginx Ingress"
     echo "     [--cert-manager]       -- deploys cert-manager"
     echo "     [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users"
     echo "     [--helm|--tiller]      -- deploys secure Helm Tiller (deprecated)"
@@ -39,6 +40,7 @@ usage() {
 # TODO: would be nice to discover available systems from bin/bootstrap-system-* and discover dependencies
 _available_systems() {
   echo "
+    nginx-ingress
     cert-manager
     k-rail
     helm
@@ -123,11 +125,11 @@ case "${1:-usage}" in
         --do|--digitalocean)
           echo "digitalocean" > state/infrastructure
           ;;
-        # --cfcontainers)
-        # Is this section really for Diego for SCF?
-        #   echo 1 > state/systems/cfcontainers
-        #   echo 1 > state/systems/helm
-        #   ;;
+
+        --ingress|--nginx-ingress)
+          echo 1 > state/systems/helm
+          echo 1 > state/systems/nginx-ingress
+          ;;
         --kubecf|--cf|--scf|--eirini)
           echo 1 > state/systems/helm
           echo 1 > state/systems/cf-operator
