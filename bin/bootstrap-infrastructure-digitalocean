@@ -13,6 +13,16 @@ _cluster_name() {
   cat state/digitalocean/cluster-name
 }
 
+# doctl k8s options sizes
+NODE_SIZE=${NODE_SIZE:-"s-2vcpu-2gb"}
+_node_size() {
+  [[ -f state/digitalocean/node-size ]] || {
+    mkdir -p state/digitalocean
+    echo "${NODE_SIZE}" > state/digitalocean/node-size
+  }
+  cat state/digitalocean/node-size
+}
+
 failfast() {
   [[ "$(command -v doctl)X" != "X" ]] || {
     echo "ERROR: missing 'doctl' CLI from \$PATH" >> $1
@@ -35,7 +45,7 @@ up() {
     echo "Creating Digital Ocean cluster $(_cluster_name)..."
     doctl kubernetes cluster create "$(_cluster_name)" \
       --auto-upgrade \
-      --node-pool "name=default;size=s-1vcpu-2gb;count=2;auto-scale=true;min-nodes=2;max-nodes=5"
+      --node-pool "name=default;size=$(_node_size);count=2;auto-scale=true;min-nodes=2;max-nodes=5"
   }
 
   status=$(clusterStatus)
