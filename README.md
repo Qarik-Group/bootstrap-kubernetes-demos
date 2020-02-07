@@ -136,7 +136,28 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
 
 ## Rancher
 
-You can install the Rancher management tool into your cluster.
+You can install the Rancher management tool into your cluster. It will also install cert-manager, which it uses.
+
+```plain
+bootstrap-kubernetes-demos up --digitalocean --rancher
+```
+
+Once the Rancher chart is installed, it will print out the URL for Rancher.
+
+```plain
+...
+Browse to https://rancher.35.230.87.102.xip.io
+
+Happy Containering!
+Waiting for deployment "rancher" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "rancher" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "rancher" rollout to finish: 2 of 3 updated replicas are available...
+deployment "rancher" successfully rolled out
+```
+
+NOTE: [rancher/rancher#16213](https://github.com/rancher/rancher/issues/16213)
+
+Once you've logged into Rancher, the `local` cluster will not "provision". You need to edit and save it, and then the `local` cluster will be available.
 
 ## k-rail to enforce policies
 
