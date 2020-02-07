@@ -93,6 +93,14 @@ Also supported. Just doesn't have a documentation paragraph.
 bootstrap-kubernetes-demos up --azure
 ```
 
+## Digital Ocean
+
+```plain
+bootstrap-kubernetes-demos up --digitalocean
+```
+
+The Digital Ocean cluster will install 2 x 2 CPU/2Gb nodes, and will install the nginx-ingress controller.
+
 ## Subsystems
 
 But there are many subsystems that can be conveniently deployed after your cluster is setup:
@@ -106,6 +114,7 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
      [--az|--azure]         -- bootstrap new Azure AKE cluster
      [--do|--digitalocean]  -- bootstrap new Digital Ocean cluster
 
+     [--ingress|--nginx-ingress] -- deploys Nginx Ingress
      [--cert-manager]       -- deploys cert-manager
      [--k-rail|--krail]     -- deploys k-rail to enforce policies for end users
      [--helm|--tiller]      -- deploys secure Helm Tiller (deprecated)
@@ -115,6 +124,7 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
      [--kpack]              -- deploys kpack to build images with buildpacks
      [--tekton]             -- deploys Tekton CD
      [--knative]            -- deploys Knative Serving/Eventing/Istio
+     [--rancher]            -- deploys Rancher
      [--rio]                -- deploys Rancher Rio
      [--kubeapp]                -- deploys Kubeapps
      [--service-catalog|--sc]   -- deploys Helm/Service Catalog
@@ -123,6 +133,10 @@ Bootstrap Kubernetes and/or subsystems for demonstrations:
   down                        -- destroys cluster, if originally bootstrapped
   clean                       -- cleans up cached state files
 ```
+
+## Rancher
+
+You can install the Rancher management tool into your cluster.
 
 ## k-rail to enforce policies
 
