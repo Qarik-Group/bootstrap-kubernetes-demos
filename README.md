@@ -14,7 +14,7 @@ New Kubernetes clusters can be provisioned on:
 ```plain
 bootstrap-kubernetes-demos up --google --kubecf
 bootstrap-kubernetes-demos up --azure --knative --kpack
-bootstrap-kubernetes-demos up --digitalocean
+bootstrap-kubernetes-demos up --digitalocean --rancher
 bootstrap-kubernetes-demos up --minikube --cert-manager
 ```
 
@@ -38,12 +38,12 @@ cd bootstrap-kubernetes-demos
 
 direnv allow
 # or
-export PATH=$PWD/bin:$PWD/vendor/helm-tiller-manager/bin:$PATH
+export PATH=$PWD/bin:$PATH
 ```
 
 ## Minikube
 
-First, install Minikube.
+First, install [Minikube](https://kubernetes.io/docs/setup/learning-environment/minikube/).
 
 To start Minikube, plus additional subsystems:
 
@@ -83,6 +83,14 @@ There are several environment variables that can be set to override defaults:
 : ${CLUSTER_NAME:="$(whoami)-dev"}
 : ${CLUSTER_VERSION:=latest}
 : ${MACHINE_TYPE:=n1-standard-2}
+```
+
+## Azure
+
+Also supported. Just doesn't have a documentation paragraph.
+
+```plain
+bootstrap-kubernetes-demos up --azure
 ```
 
 ## Subsystems
