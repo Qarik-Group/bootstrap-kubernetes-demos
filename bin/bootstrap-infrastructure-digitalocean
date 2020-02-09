@@ -23,6 +23,15 @@ _node_size() {
   cat state/digitalocean/node-size
 }
 
+CLUSTER_SIZE=${CLUSTER_SIZE:-"3"}
+_cluster_size() {
+  [[ -f state/digitalocean/cluster-size ]] || {
+    mkdir -p state/digitalocean
+    echo "${CLUSTER_SIZE}" > state/digitalocean/cluster-size
+  }
+  cat state/digitalocean/cluster-size
+}
+
 failfast() {
   [[ "$(command -v doctl)X" != "X" ]] || {
     echo "ERROR: missing 'doctl' CLI from \$PATH" >> $1
@@ -45,7 +54,7 @@ up() {
     echo "Creating Digital Ocean cluster $(_cluster_name)..."
     doctl kubernetes cluster create "$(_cluster_name)" \
       --auto-upgrade \
-      --node-pool "name=default;size=$(_node_size);count=2;auto-scale=true;min-nodes=2;max-nodes=5"
+      --node-pool "name=default;size=$(_node_size);count=$(_cluster_size);auto-scale=true;min-nodes=2;max-nodes=5"
   }
 
   status=$(clusterStatus)
@@ -56,11 +65,6 @@ up() {
   done
 
   doctl kubernetes cluster kubeconfig save "$(_cluster_name)"
-
-  # kubectl create clusterrolebinding cluster-admin-binding \
-  #   --clusterrole=cluster-admin \
-  #   --user="$(gcloud config get-value core/account)" \
-  #   --dry-run=true -o yaml | kubectl apply -f -
 
   exit 0
 }
