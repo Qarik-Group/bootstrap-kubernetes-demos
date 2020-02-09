@@ -6,7 +6,11 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _system_domain() {
   [[ -f state/configuration/kubecf-system-domain ]] || {
+    if [[ -f state/configuration/ingress-domain ]]; then
+      cp state/configuration/ingress-domain state/configuration/kubecf-system-domain
+    else
     echo "${CF_SYSTEM_DOMAIN:-kubecf.dev}" > state/configuration/kubecf-system-domain
+    fi
   }
   cat state/configuration/kubecf-system-domain
 }
