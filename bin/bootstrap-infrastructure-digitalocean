@@ -75,7 +75,13 @@ describe() {
 
 down() {
   [[ -f state/digitalocean/cluster-name ]] || { echo "No record of provisioned cluster."; exit 1; }
+
+  echo "Deleting cluster..."
   doctl kubernetes cluster delete "$(_cluster_name)" --force
+
+  echo "Deleting all load balancers..."
+  echo "TODO - only delete load balancers with no droplets"
+  doctl compute load-balancer list --format ID,DropletIDs | tail -n +2 | awk '{print $1}' | xargs -L1 doctl compute load-balancer delete -f
 }
 
 
