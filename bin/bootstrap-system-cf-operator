@@ -8,6 +8,13 @@ export HELM_TLS_VERIFY=${HELM_TLS_VERIFY:-true}
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 _namespace() {
+  [[ -f state/configuration/cf-operator-namespace ]] || {
+    echo "${CF_OPERATOR_NAMESPACE:-kubecf-operator}" > state/configuration/cf-operator-namespace
+  }
+  cat state/configuration/cf-operator-namespace
+}
+
+_kubecf_namespace() {
   [[ -f state/configuration/kubecf-namespace ]] || {
     echo "${CF_NAMESPACE:-kubecf}" > state/configuration/kubecf-namespace
   }
@@ -47,6 +54,7 @@ up() {
   failfast
 
   ns=$(_namespace)
+  watchNamespace=$(_kubecf_namespace)
 
   echo "Install Cloud Foundry/Quarks (cf-operator)"
   # create scf namespace - helm3 doesn't do this
@@ -80,6 +88,7 @@ YAML
     cf-operator \
     "${CF_OPERATOR_HELM_TGZ}" \
     ${CFOPERATOR_TAG:+--set "image.tag=${CFOPERATOR_TAG}"} \
+    --set "global.operator.watchNamespace=${watchNamespace}" \
     --set "provider=gke" \
     --set "operator-webhook-use-service-reference=true" # coming in future
   )
@@ -99,10 +108,10 @@ restart() {
 }
 
 down() {
-  helm delete cf-operator --purge
+  helm delete cf-operator -n "$(_namespace)"
 
-  kubectl delete validatingwebhookconfigurations -l name=cf-operator-webhook
-  kubectl delete mutatingwebhookconfigurations -l name=cf-operator-webhook
+  kubectl delete validatingwebhookconfigurations cf-operator-hook-"$(_namespace)"
+  kubectl delete mutatingwebhookconfigurations cf-operator-hook-"$(_namespace)"
 }
 
 case "${1:-usage}" in
