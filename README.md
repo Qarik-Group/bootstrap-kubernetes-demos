@@ -191,22 +191,25 @@ Put that in your `.profile` for all terminal sessions.
 
 ## Cloud Foundry / Eirini / Quarks
 
-To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--kubecf`, or `--eirini` flags):
+To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--kubecf`, or `--eirini` flags). The explicit `--ingress` flag will automatically setup a default `.xip.io` system domain.
 
 ```plain
-bootstrap-kubernetes-demos up --kubecf
-bootstrap-kubernetes-demos up --google --cf
-bootstrap-kubernetes-demos up --azure --cf
-```
-
-You can override some defaults by setting the following environment variables before running the command above:
-
-```bash
-: ${CF_SYSTEM_DOMAIN:=kubecf.dev}
-: ${CF_NAMESPACE:=kubecf}
+bootstrap-kubernetes-demos up --cf --ingress
+bootstrap-kubernetes-demos up --google --cf --ingress
+bootstrap-kubernetes-demos up --azure --cf --ingress
+bootstrap-kubernetes-demos up --digitalocean --cf --ingress
 ```
 
 Your Cloud Foundry Buildpacks will be automatically updated to the latest from GitHub, and each day a cronjob will run to update them again.
+
+To target and login:
+
+```plain
+SYSTEM_DOMAIN=$(kubectl get secret kubecf.var-system-domain -ojsonpath='{.data.value}' | base64 --decode)
+ADMIN_PASSWORD=$(kubectl get secret kubecf.var-cf-admin-password -ojsonpath='{.data.password}' | base64 --decode)
+
+cf login -a https://api.$SYSTEM_DOMAIN --skip-ssl-validation -u admin -p $ADMIN_PASSWORD
+```
 
 ### Access to KubeCF
 
