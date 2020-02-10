@@ -132,8 +132,14 @@ case "${1:-usage}" in
           echo 1 > state/systems/helm
           echo 1 > state/systems/nginx-ingress
           ;;
+
+        --no-ingress|--no-nginx-ingress)
+          rm state/systems/nginx-ingress
+          ;;
+
         --kubecf|--cf|--scf|--eirini)
           echo 1 > state/systems/helm
+          echo 1 > state/systems/nginx-ingress
           echo 1 > state/systems/cf-operator
           echo 1 > state/systems/kubecf
           ;;
@@ -141,6 +147,7 @@ case "${1:-usage}" in
           echo 1 > state/systems/helm
           echo 1 > state/systems/cf-operator
           ;;
+
         --cert-manager)
           echo 1 > state/systems/cert-manager
           ;;
