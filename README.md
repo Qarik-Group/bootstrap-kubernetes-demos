@@ -211,6 +211,12 @@ ADMIN_PASSWORD=$(kubectl get secret kubecf.var-cf-admin-password -ojsonpath='{.d
 cf login -a https://api.$SYSTEM_DOMAIN --skip-ssl-validation -u admin -p $ADMIN_PASSWORD
 ```
 
+This is also available via:
+
+```plain
+bootstrap-system-kubecf login
+```
+
 ### Access to KubeCF
 
 Currently this CF deployment does not setup a public ingress into the Cloud Foundry router. Nor will it ever set up your public DNS to map to your Cloud Foundry ingress/router.
