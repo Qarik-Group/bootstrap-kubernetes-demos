@@ -14,7 +14,7 @@ _cluster_name() {
 }
 
 # doctl k8s options sizes
-NODE_SIZE=${NODE_SIZE:-"s-2vcpu-2gb"}
+NODE_SIZE=${NODE_SIZE:-"s-2vcpu-4gb"}
 _node_size() {
   [[ -f state/digitalocean/node-size ]] || {
     mkdir -p state/digitalocean
