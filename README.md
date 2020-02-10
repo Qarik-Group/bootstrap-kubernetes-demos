@@ -99,7 +99,7 @@ bootstrap-kubernetes-demos up --azure
 bootstrap-kubernetes-demos up --digitalocean
 ```
 
-The Digital Ocean cluster will install 2 x 2 CPU/2Gb nodes, and will install the nginx-ingress controller.
+The Digital Ocean cluster will install 3 x 2 CPU/2Gb nodes, and will install the nginx-ingress controller.
 
 ## Subsystems
 
