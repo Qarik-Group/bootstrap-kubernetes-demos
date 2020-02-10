@@ -99,21 +99,19 @@ YAML
   )
 }
 
-kwt_routing() {
-  [[ "$(command -v kwt)X" != "X" ]] || { echo "ERROR: install 'kwt'"; exit 1; }
+login() {
+  printf "Fetching system domain... "
+  SYSTEM_DOMAIN=$(kubectl get secret kubecf.var-system-domain -ojsonpath='{.data.value}' | base64 --decode)
+  echo "$SYSTEM_DOMAIN"
 
-  api_ip=$(kubectl get svc -n "$(_namespace)" kubecf-router-0 --template '{{.spec.clusterIP}}')
+  printf "Fetching admin password... "
+  ADMIN_PASSWORD=$(kubectl get secret kubecf.var-cf-admin-password -ojsonpath='{.data.password}' | base64 --decode)
+  echo "done."
+  echo
 
-  echo "Mapping *.$(_system_domain) to internal IP ${api_ip}..."
+  echo "+ cf login -a https://api.$SYSTEM_DOMAIN --skip-ssl-validation -u admin -p [redacted]"
   echo
-  echo "Login with:"
-  echo "cf login -a https://api.$(_system_domain) --skip-ssl-validation -u admin \\"
-  echo '   -p "$(kubectl get secret -n kubecf kubecf.var-cf-admin-password -o json | jq -r .data.password | base64 --decode)"'
-  echo
-  system_domain=$(_system_domain)
-  namespace=$(_namespace)
-  set -x
-  sudo -E kwt net start --dns-map "${system_domain}=${api_ip}" --namespace "$namespace"
+  cf login -a https://api.$SYSTEM_DOMAIN --skip-ssl-validation -u admin -p $ADMIN_PASSWORD
 }
 
 case "${1:-usage}" in
@@ -127,9 +125,9 @@ case "${1:-usage}" in
     up
     ;;
 
-  kwt)
+  login)
     shift
-    kwt_routing
+    login
     ;;
 
   *)
