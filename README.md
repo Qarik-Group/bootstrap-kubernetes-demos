@@ -194,10 +194,10 @@ Put that in your `.profile` for all terminal sessions.
 To bootstrap GKE, and then install Cloud Foundry (with Eirini/Quarks) use the `--cf` flag (or `--kubecf`, or `--eirini` flags). The explicit `--ingress` flag will automatically setup a default `.xip.io` system domain.
 
 ```plain
-bootstrap-kubernetes-demos up --cf --ingress
-bootstrap-kubernetes-demos up --google --cf --ingress
-bootstrap-kubernetes-demos up --azure --cf --ingress
-bootstrap-kubernetes-demos up --digitalocean --cf --ingress
+bootstrap-kubernetes-demos up --cf
+bootstrap-kubernetes-demos up --google --cf
+bootstrap-kubernetes-demos up --azure --cf
+bootstrap-kubernetes-demos up --digitalocean --cf
 ```
 
 Your Cloud Foundry Buildpacks will be automatically updated to the latest from GitHub, and each day a cronjob will run to update them again.
