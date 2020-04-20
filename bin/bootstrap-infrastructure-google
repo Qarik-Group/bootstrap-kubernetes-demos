@@ -43,30 +43,35 @@ clusterStatus() {
 up() {
   _setup_env
   [[ -z "$(clusterStatus)" ]] && {
+  (
     echo "Creating GKE cluster..."
-    additional_flags=
+    cluster_name="$(_cluster_name)"
+    args=()
+    args+=("--region" "${CLUSTER_ZONE}")
+    args+=("--cluster-version" "${CLUSTER_VERSION}")
+    args+=("--machine-type" "${MACHINE_TYPE}")
+    args+=("--enable-autoscaling")
+    args+=("--min-nodes=1")
+    args+=("--max-nodes=5")
+    args+=("--enable-autorepair")
+    args+=("--scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore")
+    args+=("--num-nodes=3")
+    args+=("--no-enable-basic-auth")
+    args+=("--no-issue-client-certificate")
+    args+=("--enable-ip-alias")
+    args+=("--metadata" "disable-legacy-endpoints=true")
     [[ "${cfcontainers:-}" == "1" ]] && {
       echo "- Using UBUNTU image-type for cf-containers/eirini requirements"
       # https://github.com/SUSE/scf/wiki/Deployment-on-Google-GKE
-      additional_flags="${additional_flags} --image-type UBUNTU"
+      additional_flags+=("--image-type" "UBUNTU")
       # TODO -  additional_flags="${additional_flags} --addons=HttpLoadBalancing"
       # see https://cloud.google.com/sdk/gcloud/reference/container/clusters/create
-      additional_flags="${additional_flags} --no-enable-autorepair" # not supported for UBUNTU
-      additional_flags="${additional_flags} --no-enable-autoupgrade" # not supported for UBUNTU
+      additional_flags+=("--no-enable-autorepair") # not supported for UBUNTU
+      additional_flags+=("--no-enable-autoupgrade") # not supported for UBUNTU
     }
-    gcloud container clusters create "$(_cluster_name)" \
-      --region="$CLUSTER_ZONE" \
-      --cluster-version="${CLUSTER_VERSION}" \
-      --machine-type="${MACHINE_TYPE}" \
-      --enable-autoscaling --min-nodes=1 --max-nodes=5 \
-      --enable-autorepair \
-      --scopes=service-control,service-management,compute-rw,storage-ro,cloud-platform,logging-write,monitoring-write,pubsub,datastore \
-      --num-nodes=3 \
-      --no-enable-basic-auth \
-      --no-issue-client-certificate \
-      --enable-ip-alias \
-      --metadata disable-legacy-endpoints=true \
-      ${additional_flags}
+    set -x
+    gcloud container clusters create "$cluster_name" "${args[@]}"
+  )
   }
 
   status=$(clusterStatus)
@@ -82,7 +87,7 @@ up() {
   kubectl create clusterrolebinding cluster-admin-binding \
     --clusterrole=cluster-admin \
     --user="$(gcloud config get-value core/account)" \
-    --dry-run=true -o yaml | kubectl apply -f -
+    -o yaml | kubectl apply -f -
 
   [[ "${cfcontainers:-}" == "1" ]] && {
     echo "- Update nodes to support cgroup swap accounting..."
@@ -129,6 +134,12 @@ down() {
   gcloud container clusters delete "$(_cluster_name)" --region "$CLUSTER_ZONE" --quiet
 }
 
+static_ip() {
+  name=$1
+  region="$(gcloud config get-value compute/region)"
+  gcloud compute addresses create "$name" --region "$region"
+  gcloud compute addresses describe "$name" --region "$region" | bosh int - --path /address
+}
 
 case "${1:-usage}" in
   failfast)
